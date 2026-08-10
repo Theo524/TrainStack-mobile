@@ -18,7 +18,11 @@ function getExerciseLines(activeWorkout) {
     .filter(Boolean);
 }
 
-export default function WorkoutScreen({ activeWorkout, onFinishWorkout }) {
+export default function WorkoutScreen({
+  activeWorkout,
+  onFinishWorkout,
+  onScrollToY,
+}) {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -27,6 +31,7 @@ export default function WorkoutScreen({ activeWorkout, onFinishWorkout }) {
   const [isRestRunning, setIsRestRunning] = useState(false);
 
   const [completedExercises, setCompletedExercises] = useState({});
+  const [checklistY, setChecklistY] = useState(0);
 
   const exerciseLines = getExerciseLines(activeWorkout);
 
@@ -119,6 +124,12 @@ export default function WorkoutScreen({ activeWorkout, onFinishWorkout }) {
     setRestSeconds(restDuration);
   }
 
+  function jumpToChecklist() {
+    if (!activeWorkout) return;
+
+    onScrollToY(checklistY - 10);
+  }
+
   function finishWorkout() {
     if (!activeWorkout) return;
 
@@ -132,7 +143,7 @@ export default function WorkoutScreen({ activeWorkout, onFinishWorkout }) {
       day: activeWorkout.day,
       totalExercises: exerciseLines.length,
       completedExercises: completedCount,
-      totalSeconds: seconds,
+      optionalTimerSeconds: seconds,
       finishedAt: new Date().toISOString(),
     };
 
@@ -143,22 +154,29 @@ export default function WorkoutScreen({ activeWorkout, onFinishWorkout }) {
     <View>
       <Text style={styles.eyebrow}>TRAIN</Text>
       <Text style={styles.title}>Train</Text>
-      <Text style={styles.subtitle}>Timer first, checklist underneath.</Text>
+      <Text style={styles.subtitle}>
+        Complete exercises. Use timers when useful.
+      </Text>
 
       {activeWorkout ? (
-        <View style={styles.summaryCard}>
+        <Pressable style={styles.summaryCard} onPress={jumpToChecklist}>
           <Text style={styles.summaryLabel}>Loaded workout</Text>
           <Text style={styles.summaryTitle}>{activeWorkout.name}</Text>
           <Text style={styles.summaryMeta}>
             {activeWorkout.day} • {completedCount}/{exerciseLines.length} done
           </Text>
-        </View>
+          <Text style={styles.summaryHint}>Tap this box to jump to checklist</Text>
+
+          <Pressable style={styles.finishButtonTop} onPress={finishWorkout}>
+            <Text style={styles.finishButtonTopText}>Finish workout</Text>
+          </Pressable>
+        </Pressable>
       ) : (
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>No workout loaded</Text>
           <Text style={styles.summaryTitle}>Manual timer mode</Text>
           <Text style={styles.summaryMeta}>
-            Start a workout from Today, or use the timer by itself.
+            Start a workout from Today, or use the timers by themselves.
           </Text>
         </View>
       )}
@@ -184,12 +202,6 @@ export default function WorkoutScreen({ activeWorkout, onFinishWorkout }) {
             <Text style={styles.secondaryButtonText}>Reset</Text>
           </Pressable>
         </View>
-
-        {activeWorkout ? (
-          <Pressable style={styles.finishButton} onPress={finishWorkout}>
-            <Text style={styles.finishButtonText}>Finish workout</Text>
-          </Pressable>
-        ) : null}
       </View>
 
       <View style={styles.restCard}>
@@ -263,7 +275,12 @@ export default function WorkoutScreen({ activeWorkout, onFinishWorkout }) {
       </View>
 
       {activeWorkout ? (
-        <View style={styles.card}>
+        <View
+          style={styles.card}
+          onLayout={(event) => {
+            setChecklistY(event.nativeEvent.layout.y);
+          }}
+        >
           <Text style={styles.cardTitle}>Exercise checklist</Text>
 
           {exerciseLines.length > 0 ? (
@@ -320,6 +337,10 @@ export default function WorkoutScreen({ activeWorkout, onFinishWorkout }) {
                   );
                 })}
               </View>
+
+              <Pressable style={styles.finishButtonBottom} onPress={finishWorkout}>
+                <Text style={styles.finishButtonBottomText}>Finish workout</Text>
+              </Pressable>
             </>
           ) : (
             <Text style={styles.cardText}>
@@ -386,6 +407,27 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
+  summaryHint: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 8,
+  },
+
+  finishButtonTop: {
+    marginTop: 14,
+    backgroundColor: colors.green,
+    borderRadius: 18,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+
+  finishButtonTopText: {
+    color: "#ffffff",
+    fontWeight: "900",
+    fontSize: 15,
+  },
+
   timerCard: {
     backgroundColor: colors.green,
     borderRadius: 30,
@@ -436,22 +478,6 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: "#ffffff",
     fontWeight: "900",
-  },
-
-  finishButton: {
-    marginTop: 18,
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    paddingVertical: 15,
-    paddingHorizontal: 32,
-    width: "100%",
-    alignItems: "center",
-  },
-
-  finishButtonText: {
-    color: colors.green,
-    fontWeight: "900",
-    fontSize: 16,
   },
 
   restCard: {
@@ -634,5 +660,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
     textDecorationLine: "line-through",
+  },
+
+  finishButtonBottom: {
+    marginTop: 16,
+    backgroundColor: colors.green,
+    borderRadius: 18,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+
+  finishButtonBottomText: {
+    color: "#ffffff",
+    fontWeight: "900",
+    fontSize: 16,
   },
 });

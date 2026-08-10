@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -26,18 +26,27 @@ function AppContent() {
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [completedWorkouts, setCompletedWorkouts] = useState([]);
 
+  const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
 
   function addPlannedWorkout(newWorkout) {
-    setPlannedWorkouts((currentWorkouts) => [
-      newWorkout,
-      ...currentWorkouts,
-    ]);
+    setPlannedWorkouts((currentWorkouts) => [newWorkout, ...currentWorkouts]);
+  }
+
+  function changeTab(tab) {
+    setActiveTab(tab);
+
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({
+        y: 0,
+        animated: false,
+      });
+    }, 50);
   }
 
   function startTraining(workout) {
     setActiveWorkout(workout);
-    setActiveTab("train");
+    changeTab("train");
   }
 
   function finishWorkout(completedWorkout) {
@@ -47,7 +56,14 @@ function AppContent() {
     ]);
 
     setActiveWorkout(null);
-    setActiveTab("stats");
+    changeTab("stats");
+  }
+
+  function scrollToY(y) {
+    scrollViewRef.current?.scrollTo({
+      y,
+      animated: true,
+    });
   }
 
   function renderScreen() {
@@ -55,7 +71,7 @@ function AppContent() {
       return (
         <TodayScreen
           plannedWorkouts={plannedWorkouts}
-          onGoToPlan={() => setActiveTab("plan")}
+          onGoToPlan={() => changeTab("plan")}
           onStartTraining={startTraining}
         />
       );
@@ -75,6 +91,7 @@ function AppContent() {
         <WorkoutScreen
           activeWorkout={activeWorkout}
           onFinishWorkout={finishWorkout}
+          onScrollToY={scrollToY}
         />
       );
     }
@@ -88,7 +105,7 @@ function AppContent() {
     return (
       <TodayScreen
         plannedWorkouts={plannedWorkouts}
-        onGoToPlan={() => setActiveTab("plan")}
+        onGoToPlan={() => changeTab("plan")}
         onStartTraining={startTraining}
       />
     );
@@ -100,6 +117,7 @@ function AppContent() {
 
       <View style={styles.app}>
         <ScrollView
+          ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
@@ -111,7 +129,7 @@ function AppContent() {
           {renderScreen()}
         </ScrollView>
 
-        <BottomNav activeTab={activeTab} onChangeTab={setActiveTab} />
+        <BottomNav activeTab={activeTab} onChangeTab={changeTab} />
       </View>
     </SafeAreaView>
   );

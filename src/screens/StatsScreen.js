@@ -30,23 +30,25 @@ export default function StatsScreen({ completedWorkouts }) {
     0
   );
 
-  const totalSeconds = completedWorkouts.reduce(
-    (sum, workout) => sum + workout.totalSeconds,
-    0
-  );
+  const completionPercentage =
+    totalExercises === 0
+      ? 0
+      : Math.round((totalCompletedExercises / totalExercises) * 100);
+
+  const latestWorkout = completedWorkouts[0];
 
   return (
     <View>
       <Text style={styles.eyebrow}>STATS</Text>
       <Text style={styles.title}>Progress</Text>
       <Text style={styles.subtitle}>
-        Completed workouts will appear here after you press Finish workout.
+        Stats are based on completed workouts and checked exercises.
       </Text>
 
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{totalWorkouts}</Text>
-          <Text style={styles.statLabel}>Workouts</Text>
+          <Text style={styles.statLabel}>Workouts finished</Text>
         </View>
 
         <View style={styles.statCard}>
@@ -55,17 +57,15 @@ export default function StatsScreen({ completedWorkouts }) {
         </View>
 
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>{formatTime(totalSeconds)}</Text>
-          <Text style={styles.statLabel}>Total time</Text>
+          <Text style={styles.statValue}>{completionPercentage}%</Text>
+          <Text style={styles.statLabel}>Completion rate</Text>
         </View>
 
         <View style={styles.statCard}>
           <Text style={styles.statValue}>
-            {totalExercises === 0
-              ? "0%"
-              : `${Math.round((totalCompletedExercises / totalExercises) * 100)}%`}
+            {latestWorkout ? latestWorkout.name : "—"}
           </Text>
-          <Text style={styles.statLabel}>Completion</Text>
+          <Text style={styles.statLabel}>Latest workout</Text>
         </View>
       </View>
 
@@ -89,7 +89,14 @@ export default function StatsScreen({ completedWorkouts }) {
 
               <Text style={styles.historyMeta}>
                 {workout.completedExercises}/{workout.totalExercises} exercises
-                completed • {formatTime(workout.totalSeconds)}
+                completed
+              </Text>
+
+              <Text style={styles.historyTimer}>
+                Optional timer:{" "}
+                {workout.optionalTimerSeconds > 0
+                  ? formatTime(workout.optionalTimerSeconds)
+                  : "not used"}
               </Text>
             </View>
           ))
@@ -146,7 +153,7 @@ const styles = StyleSheet.create({
   },
 
   statValue: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "900",
     color: colors.green,
   },
@@ -217,6 +224,13 @@ const styles = StyleSheet.create({
   historyMeta: {
     marginTop: 7,
     fontSize: 14,
+    color: colors.muted,
+    lineHeight: 20,
+  },
+
+  historyTimer: {
+    marginTop: 3,
+    fontSize: 13,
     color: colors.muted,
     lineHeight: 20,
   },
