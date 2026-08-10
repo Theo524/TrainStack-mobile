@@ -2,28 +2,106 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors } from "../styles/theme";
 
-export default function StatsScreen() {
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatFinishedDate(dateString) {
+  return new Date(dateString).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+export default function StatsScreen({ completedWorkouts }) {
+  const totalWorkouts = completedWorkouts.length;
+
+  const totalCompletedExercises = completedWorkouts.reduce(
+    (sum, workout) => sum + workout.completedExercises,
+    0
+  );
+
+  const totalExercises = completedWorkouts.reduce(
+    (sum, workout) => sum + workout.totalExercises,
+    0
+  );
+
+  const totalSeconds = completedWorkouts.reduce(
+    (sum, workout) => sum + workout.totalSeconds,
+    0
+  );
+
   return (
     <View>
       <Text style={styles.eyebrow}>STATS</Text>
       <Text style={styles.title}>Progress</Text>
-      <Text style={styles.subtitle}>Your workout progress will appear here.</Text>
+      <Text style={styles.subtitle}>
+        Completed workouts will appear here after you press Finish workout.
+      </Text>
 
-      <View style={styles.grid}>
+      <View style={styles.statsGrid}>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>0</Text>
-          <Text style={styles.statLabel}>workouts</Text>
+          <Text style={styles.statValue}>{totalWorkouts}</Text>
+          <Text style={styles.statLabel}>Workouts</Text>
         </View>
 
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>0</Text>
-          <Text style={styles.statLabel}>minutes</Text>
+          <Text style={styles.statValue}>{totalCompletedExercises}</Text>
+          <Text style={styles.statLabel}>Exercises done</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{formatTime(totalSeconds)}</Text>
+          <Text style={styles.statLabel}>Total time</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>
+            {totalExercises === 0
+              ? "0%"
+              : `${Math.round((totalCompletedExercises / totalExercises) * 100)}%`}
+          </Text>
+          <Text style={styles.statLabel}>Completion</Text>
         </View>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Later</Text>
-        <Text style={styles.cardText}>Weekly workouts, total time, streaks, and exercise progress.</Text>
+        <Text style={styles.cardTitle}>Workout history</Text>
+
+        {completedWorkouts.length === 0 ? (
+          <Text style={styles.emptyText}>
+            No completed workouts yet. Start a workout from Today, tick off some
+            exercises, then press Finish workout.
+          </Text>
+        ) : (
+          completedWorkouts.map((workout) => (
+            <View key={workout.id} style={styles.historyItem}>
+              <View style={styles.historyTopRow}>
+                <Text style={styles.historyName}>{workout.name}</Text>
+                <Text style={styles.historyDate}>
+                  {formatFinishedDate(workout.finishedAt)}
+                </Text>
+              </View>
+
+              <Text style={styles.historyMeta}>
+                {workout.completedExercises}/{workout.totalExercises} exercises
+                completed • {formatTime(workout.totalSeconds)}
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Next upgrade</Text>
+        <Text style={styles.cardText}>
+          Next we can save this history to your phone, so stats stay even after
+          closing the app.
+        </Text>
       </View>
     </View>
   );
@@ -51,14 +129,15 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
-  grid: {
+  statsGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
     marginBottom: 18,
   },
 
   statCard: {
-    flex: 1,
+    width: "48%",
     backgroundColor: colors.card,
     borderRadius: 24,
     padding: 18,
@@ -66,16 +145,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
 
-  statNumber: {
-    fontSize: 36,
+  statValue: {
+    fontSize: 26,
     fontWeight: "900",
     color: colors.green,
   },
 
   statLabel: {
-    color: colors.muted,
+    marginTop: 5,
+    fontSize: 13,
     fontWeight: "800",
-    marginTop: 4,
+    color: colors.muted,
   },
 
   card: {
@@ -98,5 +178,46 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.muted,
     lineHeight: 22,
+  },
+
+  emptyText: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+
+  historyItem: {
+    borderTopWidth: 1,
+    borderTopColor: "#eee8da",
+    paddingTop: 14,
+    paddingBottom: 4,
+    marginTop: 8,
+  },
+
+  historyTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+
+  historyName: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: "900",
+    color: colors.text,
+  },
+
+  historyDate: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: colors.green,
+  },
+
+  historyMeta: {
+    marginTop: 7,
+    fontSize: 14,
+    color: colors.muted,
+    lineHeight: 20,
   },
 });

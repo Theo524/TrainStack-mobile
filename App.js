@@ -24,16 +24,30 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState("today");
   const [plannedWorkouts, setPlannedWorkouts] = useState([]);
   const [activeWorkout, setActiveWorkout] = useState(null);
+  const [completedWorkouts, setCompletedWorkouts] = useState([]);
 
   const insets = useSafeAreaInsets();
 
   function addPlannedWorkout(newWorkout) {
-    setPlannedWorkouts([newWorkout, ...plannedWorkouts]);
+    setPlannedWorkouts((currentWorkouts) => [
+      newWorkout,
+      ...currentWorkouts,
+    ]);
   }
 
   function startTraining(workout) {
     setActiveWorkout(workout);
     setActiveTab("train");
+  }
+
+  function finishWorkout(completedWorkout) {
+    setCompletedWorkouts((currentCompletedWorkouts) => [
+      completedWorkout,
+      ...currentCompletedWorkouts,
+    ]);
+
+    setActiveWorkout(null);
+    setActiveTab("stats");
   }
 
   function renderScreen() {
@@ -57,10 +71,18 @@ function AppContent() {
     }
 
     if (activeTab === "train") {
-      return <WorkoutScreen activeWorkout={activeWorkout} />;
+      return (
+        <WorkoutScreen
+          activeWorkout={activeWorkout}
+          onFinishWorkout={finishWorkout}
+        />
+      );
     }
 
-    if (activeTab === "stats") return <StatsScreen />;
+    if (activeTab === "stats") {
+      return <StatsScreen completedWorkouts={completedWorkouts} />;
+    }
+
     if (activeTab === "more") return <MoreScreen />;
 
     return (

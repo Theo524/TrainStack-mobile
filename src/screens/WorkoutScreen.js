@@ -18,7 +18,7 @@ function getExerciseLines(activeWorkout) {
     .filter(Boolean);
 }
 
-export default function WorkoutScreen({ activeWorkout }) {
+export default function WorkoutScreen({ activeWorkout, onFinishWorkout }) {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -36,6 +36,10 @@ export default function WorkoutScreen({ activeWorkout }) {
 
   useEffect(() => {
     setCompletedExercises({});
+    setSeconds(0);
+    setIsRunning(false);
+    setIsRestRunning(false);
+    setRestSeconds(restDuration);
   }, [activeWorkout]);
 
   useEffect(() => {
@@ -115,23 +119,39 @@ export default function WorkoutScreen({ activeWorkout }) {
     setRestSeconds(restDuration);
   }
 
+  function finishWorkout() {
+    if (!activeWorkout) return;
+
+    setIsRunning(false);
+    setIsRestRunning(false);
+
+    const completedWorkout = {
+      id: Date.now().toString(),
+      workoutId: activeWorkout.id,
+      name: activeWorkout.name,
+      day: activeWorkout.day,
+      totalExercises: exerciseLines.length,
+      completedExercises: completedCount,
+      totalSeconds: seconds,
+      finishedAt: new Date().toISOString(),
+    };
+
+    onFinishWorkout(completedWorkout);
+  }
+
   return (
     <View>
       <Text style={styles.eyebrow}>TRAIN</Text>
       <Text style={styles.title}>Train</Text>
-      <Text style={styles.subtitle}>
-        Timer first, checklist underneath.
-      </Text>
+      <Text style={styles.subtitle}>Timer first, checklist underneath.</Text>
 
       {activeWorkout ? (
         <View style={styles.summaryCard}>
-          <View>
-            <Text style={styles.summaryLabel}>Loaded workout</Text>
-            <Text style={styles.summaryTitle}>{activeWorkout.name}</Text>
-            <Text style={styles.summaryMeta}>
-              {activeWorkout.day} • {completedCount}/{exerciseLines.length} done
-            </Text>
-          </View>
+          <Text style={styles.summaryLabel}>Loaded workout</Text>
+          <Text style={styles.summaryTitle}>{activeWorkout.name}</Text>
+          <Text style={styles.summaryMeta}>
+            {activeWorkout.day} • {completedCount}/{exerciseLines.length} done
+          </Text>
         </View>
       ) : (
         <View style={styles.summaryCard}>
@@ -164,6 +184,12 @@ export default function WorkoutScreen({ activeWorkout }) {
             <Text style={styles.secondaryButtonText}>Reset</Text>
           </Pressable>
         </View>
+
+        {activeWorkout ? (
+          <Pressable style={styles.finishButton} onPress={finishWorkout}>
+            <Text style={styles.finishButtonText}>Finish workout</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.restCard}>
@@ -410,6 +436,22 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: "#ffffff",
     fontWeight: "900",
+  },
+
+  finishButton: {
+    marginTop: 18,
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    paddingVertical: 15,
+    paddingHorizontal: 32,
+    width: "100%",
+    alignItems: "center",
+  },
+
+  finishButtonText: {
+    color: colors.green,
+    fontWeight: "900",
+    fontSize: 16,
   },
 
   restCard: {
