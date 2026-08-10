@@ -27,6 +27,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "398b3f85-fbdc-430a-b323-a86d69a1b629"
+      }
+    },
+    "owner": "minilobezno"
   }
 }
