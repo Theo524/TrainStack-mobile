@@ -26,7 +26,16 @@ export default function WorkoutScreen({ activeWorkout }) {
   const [restSeconds, setRestSeconds] = useState(60);
   const [isRestRunning, setIsRestRunning] = useState(false);
 
+  const [completedExercises, setCompletedExercises] = useState({});
+
   const exerciseLines = getExerciseLines(activeWorkout);
+  const completedCount = exerciseLines.filter(
+    (exercise, index) => completedExercises[`${exercise}-${index}`]
+  ).length;
+
+  useEffect(() => {
+    setCompletedExercises({});
+  }, [activeWorkout]);
 
   useEffect(() => {
     let intervalId;
@@ -59,6 +68,15 @@ export default function WorkoutScreen({ activeWorkout }) {
       clearInterval(restIntervalId);
     };
   }, [isRestRunning, restSeconds]);
+
+  function toggleExerciseComplete(exercise, index) {
+    const key = `${exercise}-${index}`;
+
+    setCompletedExercises({
+      ...completedExercises,
+      [key]: !completedExercises[key],
+    });
+  }
 
   function startStopwatch() {
     setIsRunning(true);
@@ -101,7 +119,7 @@ export default function WorkoutScreen({ activeWorkout }) {
       <Text style={styles.eyebrow}>TRAIN</Text>
       <Text style={styles.title}>Active Workout</Text>
       <Text style={styles.subtitle}>
-        Track workout time and rest between sets.
+        Tick off exercises as you complete them.
       </Text>
 
       {activeWorkout ? (
@@ -111,14 +129,60 @@ export default function WorkoutScreen({ activeWorkout }) {
           <Text style={styles.activeWorkoutDay}>{activeWorkout.day}</Text>
 
           {exerciseLines.length > 0 ? (
-            <View style={styles.exerciseList}>
-              {exerciseLines.map((exercise, index) => (
-                <View key={`${exercise}-${index}`} style={styles.exerciseRow}>
-                  <Text style={styles.exerciseNumber}>{index + 1}</Text>
-                  <Text style={styles.exerciseText}>{exercise}</Text>
-                </View>
-              ))}
-            </View>
+            <>
+              <View style={styles.progressBox}>
+                <Text style={styles.progressText}>
+                  {completedCount} / {exerciseLines.length} completed
+                </Text>
+              </View>
+
+              <View style={styles.exerciseList}>
+                {exerciseLines.map((exercise, index) => {
+                  const key = `${exercise}-${index}`;
+                  const isCompleted = completedExercises[key];
+
+                  return (
+                    <Pressable
+                      key={key}
+                      style={
+                        isCompleted
+                          ? styles.exerciseRowCompleted
+                          : styles.exerciseRow
+                      }
+                      onPress={() => toggleExerciseComplete(exercise, index)}
+                    >
+                      <View
+                        style={
+                          isCompleted
+                            ? styles.checkCircleCompleted
+                            : styles.checkCircle
+                        }
+                      >
+                        <Text
+                          style={
+                            isCompleted
+                              ? styles.checkTextCompleted
+                              : styles.checkText
+                          }
+                        >
+                          {isCompleted ? "✓" : index + 1}
+                        </Text>
+                      </View>
+
+                      <Text
+                        style={
+                          isCompleted
+                            ? styles.exerciseTextCompleted
+                            : styles.exerciseText
+                        }
+                      >
+                        {exercise}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
           ) : (
             <Text style={styles.noExerciseText}>
               This workout has no exercises yet.
@@ -227,14 +291,6 @@ export default function WorkoutScreen({ activeWorkout }) {
           </Pressable>
         </View>
       </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Next upgrade</Text>
-        <Text style={styles.cardText}>
-          After this, we’ll add set checkboxes so you can tick off each set while
-          training.
-        </Text>
-      </View>
     </View>
   );
 }
@@ -292,8 +348,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  exerciseList: {
+  progressBox: {
+    backgroundColor: colors.greenLight,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     marginTop: 16,
+  },
+
+  progressText: {
+    color: colors.green,
+    fontWeight: "900",
+    fontSize: 14,
+  },
+
+  exerciseList: {
+    marginTop: 12,
     gap: 10,
   },
 
@@ -305,16 +375,48 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 
-  exerciseNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.green,
-    color: "#ffffff",
-    textAlign: "center",
-    textAlignVertical: "center",
-    fontWeight: "900",
+  exerciseRowCompleted: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.greenLight,
+    borderRadius: 16,
+    padding: 12,
+  },
+
+  checkCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 10,
+  },
+
+  checkCircleCompleted: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.green,
+    borderWidth: 1,
+    borderColor: colors.green,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  checkText: {
+    color: colors.muted,
+    fontWeight: "900",
+    fontSize: 13,
+  },
+
+  checkTextCompleted: {
+    color: "#ffffff",
+    fontWeight: "900",
+    fontSize: 16,
   },
 
   exerciseText: {
@@ -322,6 +424,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
     fontWeight: "700",
+  },
+
+  exerciseTextCompleted: {
+    flex: 1,
+    color: colors.green,
+    fontSize: 15,
+    fontWeight: "900",
+    textDecorationLine: "line-through",
   },
 
   noExerciseText: {

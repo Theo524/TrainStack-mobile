@@ -3,8 +3,6 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors } from "../styles/theme";
 import {
   buildWorkoutSuggestion,
-  levelOptions,
-  timeOptions,
   workoutFocusOptions,
 } from "../data/workoutSuggestions";
 
@@ -15,9 +13,8 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
   const [selectedDay, setSelectedDay] = useState("Mon");
   const [exercises, setExercises] = useState("");
 
-  const [focus, setFocus] = useState("Speed");
-  const [level, setLevel] = useState("Beginner");
-  const [time, setTime] = useState("30");
+  const [focus, setFocus] = useState("Push");
+  const [customFocus, setCustomFocus] = useState("");
 
   function saveWorkout() {
     if (!workoutName.trim()) return;
@@ -34,13 +31,13 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
     setWorkoutName("");
     setSelectedDay("Mon");
     setExercises("");
+    setCustomFocus("");
   }
 
   function generateSuggestion() {
     const suggestion = buildWorkoutSuggestion({
       focus,
-      level,
-      time,
+      customFocus,
     });
 
     setWorkoutName(suggestion.name);
@@ -52,17 +49,17 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
       <Text style={styles.eyebrow}>PLAN</Text>
       <Text style={styles.title}>Workout Planner</Text>
       <Text style={styles.subtitle}>
-        Type manually or generate a suggested workout.
+        Generate a starting point or type your own workout.
       </Text>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Suggest workout</Text>
         <Text style={styles.cardText}>
-          Pick a focus, level, and time. The app will fill the workout form for
-          you, then you can edit it before saving.
+          Pick one main focus. The app will fill the form below, then you can
+          edit anything before saving.
         </Text>
 
-        <Text style={styles.label}>Focus</Text>
+        <Text style={styles.label}>What do you want to train?</Text>
         <View style={styles.chipRow}>
           {workoutFocusOptions.map((option) => {
             const isActive = focus === option;
@@ -81,43 +78,14 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
           })}
         </View>
 
-        <Text style={styles.label}>Level</Text>
-        <View style={styles.chipRow}>
-          {levelOptions.map((option) => {
-            const isActive = level === option;
-
-            return (
-              <Pressable
-                key={option}
-                style={isActive ? styles.chipActive : styles.chip}
-                onPress={() => setLevel(option)}
-              >
-                <Text style={isActive ? styles.chipTextActive : styles.chipText}>
-                  {option}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Text style={styles.label}>Time</Text>
-        <View style={styles.chipRow}>
-          {timeOptions.map((option) => {
-            const isActive = time === option;
-
-            return (
-              <Pressable
-                key={option}
-                style={isActive ? styles.chipActive : styles.chip}
-                onPress={() => setTime(option)}
-              >
-                <Text style={isActive ? styles.chipTextActive : styles.chipText}>
-                  {option} min
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Text style={styles.label}>Specific focus</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Optional: chest, jog, biceps, stamina, planche push..."
+          placeholderTextColor="#8b8578"
+          value={customFocus}
+          onChangeText={setCustomFocus}
+        />
 
         <Pressable style={styles.secondaryButton} onPress={generateSuggestion}>
           <Text style={styles.secondaryButtonText}>Generate suggestion</Text>
@@ -130,7 +98,7 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
         <Text style={styles.label}>Workout name</Text>
         <TextInput
           style={styles.input}
-          placeholder="Pull + Core, Legs, Football..."
+          placeholder="Pull day, speed session, handstand practice..."
           placeholderTextColor="#8b8578"
           value={workoutName}
           onChangeText={setWorkoutName}
