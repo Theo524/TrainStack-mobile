@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors } from "../styles/theme";
+import {
+  buildWorkoutSuggestion,
+  levelOptions,
+  timeOptions,
+  workoutFocusOptions,
+} from "../data/workoutSuggestions";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -8,6 +14,10 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
   const [workoutName, setWorkoutName] = useState("");
   const [selectedDay, setSelectedDay] = useState("Mon");
   const [exercises, setExercises] = useState("");
+
+  const [focus, setFocus] = useState("Speed");
+  const [level, setLevel] = useState("Beginner");
+  const [time, setTime] = useState("30");
 
   function saveWorkout() {
     if (!workoutName.trim()) return;
@@ -26,11 +36,93 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
     setExercises("");
   }
 
+  function generateSuggestion() {
+    const suggestion = buildWorkoutSuggestion({
+      focus,
+      level,
+      time,
+    });
+
+    setWorkoutName(suggestion.name);
+    setExercises(suggestion.exercises);
+  }
+
   return (
     <View>
       <Text style={styles.eyebrow}>PLAN</Text>
       <Text style={styles.title}>Workout Planner</Text>
-      <Text style={styles.subtitle}>Schedule workouts for the week.</Text>
+      <Text style={styles.subtitle}>
+        Type manually or generate a suggested workout.
+      </Text>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Suggest workout</Text>
+        <Text style={styles.cardText}>
+          Pick a focus, level, and time. The app will fill the workout form for
+          you, then you can edit it before saving.
+        </Text>
+
+        <Text style={styles.label}>Focus</Text>
+        <View style={styles.chipRow}>
+          {workoutFocusOptions.map((option) => {
+            const isActive = focus === option;
+
+            return (
+              <Pressable
+                key={option}
+                style={isActive ? styles.chipActive : styles.chip}
+                onPress={() => setFocus(option)}
+              >
+                <Text style={isActive ? styles.chipTextActive : styles.chipText}>
+                  {option}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text style={styles.label}>Level</Text>
+        <View style={styles.chipRow}>
+          {levelOptions.map((option) => {
+            const isActive = level === option;
+
+            return (
+              <Pressable
+                key={option}
+                style={isActive ? styles.chipActive : styles.chip}
+                onPress={() => setLevel(option)}
+              >
+                <Text style={isActive ? styles.chipTextActive : styles.chipText}>
+                  {option}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text style={styles.label}>Time</Text>
+        <View style={styles.chipRow}>
+          {timeOptions.map((option) => {
+            const isActive = time === option;
+
+            return (
+              <Pressable
+                key={option}
+                style={isActive ? styles.chipActive : styles.chip}
+                onPress={() => setTime(option)}
+              >
+                <Text style={isActive ? styles.chipTextActive : styles.chipText}>
+                  {option} min
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Pressable style={styles.secondaryButton} onPress={generateSuggestion}>
+          <Text style={styles.secondaryButtonText}>Generate suggestion</Text>
+        </Pressable>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Create workout</Text>
@@ -90,6 +182,7 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
             <View key={workout.id} style={styles.workoutItem}>
               <View style={styles.workoutTopRow}>
                 <Text style={styles.workoutName}>{workout.name}</Text>
+
                 <View style={styles.dayBadge}>
                   <Text style={styles.dayBadgeText}>{workout.day}</Text>
                 </View>
@@ -145,7 +238,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "900",
     color: colors.text,
-    marginBottom: 14,
+    marginBottom: 10,
+  },
+
+  cardText: {
+    fontSize: 15,
+    color: colors.muted,
+    lineHeight: 22,
+    marginBottom: 4,
   },
 
   label: {
@@ -172,6 +272,42 @@ const styles = StyleSheet.create({
   exerciseInput: {
     minHeight: 110,
     textAlignVertical: "top",
+  },
+
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+
+  chip: {
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 13,
+  },
+
+  chipActive: {
+    backgroundColor: colors.green,
+    borderWidth: 1,
+    borderColor: colors.green,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 13,
+  },
+
+  chipText: {
+    color: colors.muted,
+    fontWeight: "900",
+    fontSize: 13,
+  },
+
+  chipTextActive: {
+    color: "#ffffff",
+    fontWeight: "900",
+    fontSize: 13,
   },
 
   dayRow: {
@@ -219,6 +355,20 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonText: {
+    color: "#ffffff",
+    fontWeight: "900",
+    fontSize: 16,
+  },
+
+  secondaryButton: {
+    marginTop: 16,
+    backgroundColor: colors.green,
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+
+  secondaryButtonText: {
     color: "#ffffff",
     fontWeight: "900",
     fontSize: 16,
