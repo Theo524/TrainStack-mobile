@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "../styles/theme";
 
 function formatTime(totalSeconds) {
@@ -17,7 +17,12 @@ function formatFinishedDate(dateString) {
   });
 }
 
-export default function StatsScreen({ completedWorkouts }) {
+export default function StatsScreen({
+  completedWorkouts,
+  onDeleteCompletedWorkout,
+}) {
+  const [openMenuWorkoutId, setOpenMenuWorkoutId] = useState(null);
+
   const totalWorkouts = completedWorkouts.length;
 
   const totalCompletedExercises = completedWorkouts.reduce(
@@ -36,6 +41,19 @@ export default function StatsScreen({ completedWorkouts }) {
       : Math.round((totalCompletedExercises / totalExercises) * 100);
 
   const latestWorkout = completedWorkouts[0];
+
+  function toggleMenu(workoutId) {
+    if (openMenuWorkoutId === workoutId) {
+      setOpenMenuWorkoutId(null);
+    } else {
+      setOpenMenuWorkoutId(workoutId);
+    }
+  }
+
+  function deleteCompletedWorkout(workoutId) {
+    onDeleteCompletedWorkout(workoutId);
+    setOpenMenuWorkoutId(null);
+  }
 
   return (
     <View>
@@ -78,28 +96,55 @@ export default function StatsScreen({ completedWorkouts }) {
             exercises, then press Finish workout.
           </Text>
         ) : (
-          completedWorkouts.map((workout) => (
-            <View key={workout.id} style={styles.historyItem}>
-              <View style={styles.historyTopRow}>
-                <Text style={styles.historyName}>{workout.name}</Text>
-                <Text style={styles.historyDate}>
-                  {formatFinishedDate(workout.finishedAt)}
+          completedWorkouts.map((workout) => {
+            const isMenuOpen = openMenuWorkoutId === workout.id;
+
+            return (
+              <View key={workout.id} style={styles.historyItem}>
+                <View style={styles.historyTopRow}>
+                  <Text style={styles.historyName}>{workout.name}</Text>
+
+                  <View style={styles.historyActions}>
+                    <Text style={styles.historyDate}>
+                      {formatFinishedDate(workout.finishedAt)}
+                    </Text>
+
+                    <Pressable
+                      style={styles.optionsButton}
+                      onPress={() => toggleMenu(workout.id)}
+                    >
+                      <Text style={styles.optionsButtonText}>⋯</Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                <Text style={styles.historyMeta}>
+                  {workout.completedExercises}/{workout.totalExercises}{" "}
+                  exercises completed
                 </Text>
+
+                <Text style={styles.historyTimer}>
+                  Optional timer:{" "}
+                  {workout.optionalTimerSeconds > 0
+                    ? formatTime(workout.optionalTimerSeconds)
+                    : "not used"}
+                </Text>
+
+                {isMenuOpen ? (
+                  <View style={styles.actionMenu}>
+                    <Pressable
+                      style={styles.actionMenuDeleteButton}
+                      onPress={() => deleteCompletedWorkout(workout.id)}
+                    >
+                      <Text style={styles.actionMenuDeleteText}>
+                        Delete from history
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
               </View>
-
-              <Text style={styles.historyMeta}>
-                {workout.completedExercises}/{workout.totalExercises} exercises
-                completed
-              </Text>
-
-              <Text style={styles.historyTimer}>
-                Optional timer:{" "}
-                {workout.optionalTimerSeconds > 0
-                  ? formatTime(workout.optionalTimerSeconds)
-                  : "not used"}
-              </Text>
-            </View>
-          ))
+            );
+          })
         )}
       </View>
 
@@ -215,10 +260,34 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
+  historyActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
   historyDate: {
     fontSize: 13,
     fontWeight: "900",
     color: colors.green,
+  },
+
+  optionsButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  optionsButtonText: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: -8,
   },
 
   historyMeta: {
@@ -233,5 +302,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.muted,
     lineHeight: 20,
+  },
+
+  actionMenu: {
+    marginTop: 12,
+    backgroundColor: colors.input,
+    borderRadius: 18,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  actionMenuDeleteButton: {
+    backgroundColor: "#fff1ef",
+    borderWidth: 1,
+    borderColor: "#f0c5bf",
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+
+  actionMenuDeleteText: {
+    color: "#9f2f24",
+    fontWeight: "900",
+    fontSize: 14,
   },
 });

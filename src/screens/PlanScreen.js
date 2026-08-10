@@ -8,15 +8,45 @@ import {
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
+export default function PlanScreen({
+  plannedWorkouts,
+  onAddWorkout,
+  onUpdateWorkout,
+  onDeleteWorkout,
+  onScrollToTop,
+}) {
   const [workoutName, setWorkoutName] = useState("");
   const [selectedDay, setSelectedDay] = useState("Mon");
   const [exercises, setExercises] = useState("");
 
   const [focus, setFocus] = useState("Push");
+  const [editingWorkoutId, setEditingWorkoutId] = useState(null);
+  const [openMenuWorkoutId, setOpenMenuWorkoutId] = useState(null);
+
+  const isEditing = editingWorkoutId !== null;
+
+  function resetForm() {
+    setWorkoutName("");
+    setSelectedDay("Mon");
+    setExercises("");
+    setEditingWorkoutId(null);
+  }
 
   function saveWorkout() {
     if (!workoutName.trim()) return;
+
+    if (isEditing) {
+      const updatedWorkout = {
+        id: editingWorkoutId,
+        name: workoutName.trim(),
+        day: selectedDay,
+        exercises: exercises.trim(),
+      };
+
+      onUpdateWorkout(updatedWorkout);
+      resetForm();
+      return;
+    }
 
     const newWorkout = {
       id: Date.now().toString(),
@@ -26,10 +56,7 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
     };
 
     onAddWorkout(newWorkout);
-
-    setWorkoutName("");
-    setSelectedDay("Mon");
-    setExercises("");
+    resetForm();
   }
 
   function generateSuggestion() {
@@ -39,6 +66,32 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
 
     setWorkoutName(suggestion.name);
     setExercises(suggestion.exercises);
+  }
+
+  function startEditingWorkout(workout) {
+    setEditingWorkoutId(workout.id);
+    setWorkoutName(workout.name);
+    setSelectedDay(workout.day);
+    setExercises(workout.exercises || "");
+    setOpenMenuWorkoutId(null);
+    onScrollToTop();
+  }
+
+  function deleteWorkout(workoutId) {
+    onDeleteWorkout(workoutId);
+    setOpenMenuWorkoutId(null);
+
+    if (editingWorkoutId === workoutId) {
+      resetForm();
+    }
+  }
+
+  function toggleMenu(workoutId) {
+    if (openMenuWorkoutId === workoutId) {
+      setOpenMenuWorkoutId(null);
+    } else {
+      setOpenMenuWorkoutId(workoutId);
+    }
   }
 
   return (
@@ -81,7 +134,17 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Create workout</Text>
+        <Text style={styles.cardTitle}>
+          {isEditing ? "Edit workout" : "Create workout"}
+        </Text>
+
+        {isEditing ? (
+          <View style={styles.editingNotice}>
+            <Text style={styles.editingNoticeText}>
+              Editing workout. Save changes or cancel below.
+            </Text>
+          </View>
+        ) : null}
 
         <Text style={styles.label}>Workout name</Text>
         <TextInput
@@ -122,8 +185,16 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
         />
 
         <Pressable style={styles.primaryButton} onPress={saveWorkout}>
-          <Text style={styles.primaryButtonText}>Save workout plan</Text>
+          <Text style={styles.primaryButtonText}>
+            {isEditing ? "Save changes" : "Save workout plan"}
+          </Text>
         </Pressable>
+
+        {isEditing ? (
+          <Pressable style={styles.cancelButton} onPress={resetForm}>
+            <Text style={styles.cancelButtonText}>Cancel editing</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.card}>
@@ -134,25 +205,60 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
             No workouts planned yet. Create your first one above.
           </Text>
         ) : (
-          plannedWorkouts.map((workout) => (
-            <View key={workout.id} style={styles.workoutItem}>
-              <View style={styles.workoutTopRow}>
-                <Text style={styles.workoutName}>{workout.name}</Text>
+          plannedWorkouts.map((workout) => {
+            const isMenuOpen = openMenuWorkoutId === workout.id;
 
-                <View style={styles.dayBadge}>
-                  <Text style={styles.dayBadgeText}>{workout.day}</Text>
+            return (
+              <View key={workout.id} style={styles.workoutItem}>
+                <View style={styles.workoutTopRow}>
+                  <Text style={styles.workoutName}>{workout.name}</Text>
+
+                  <View style={styles.workoutActions}>
+                    <View style={styles.dayBadge}>
+                      <Text style={styles.dayBadgeText}>{workout.day}</Text>
+                    </View>
+
+                    <Pressable
+                      style={styles.optionsButton}
+                      onPress={() => toggleMenu(workout.id)}
+                    >
+                      <Text style={styles.optionsButtonText}>⋯</Text>
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
 
-              {workout.exercises ? (
-                <Text style={styles.workoutExercises}>{workout.exercises}</Text>
-              ) : (
-                <Text style={styles.workoutExercisesMuted}>
-                  No exercises added yet.
-                </Text>
-              )}
-            </View>
-          ))
+                {workout.exercises ? (
+                  <Text style={styles.workoutExercises}>
+                    {workout.exercises}
+                  </Text>
+                ) : (
+                  <Text style={styles.workoutExercisesMuted}>
+                    No exercises added yet.
+                  </Text>
+                )}
+
+                {isMenuOpen ? (
+                  <View style={styles.actionMenu}>
+                    <Pressable
+                      style={styles.actionMenuButton}
+                      onPress={() => startEditingWorkout(workout)}
+                    >
+                      <Text style={styles.actionMenuButtonText}>Edit workout</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.actionMenuDeleteButton}
+                      onPress={() => deleteWorkout(workout.id)}
+                    >
+                      <Text style={styles.actionMenuDeleteText}>
+                        Delete workout
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </View>
+            );
+          })
         )}
       </View>
     </View>
@@ -202,6 +308,20 @@ const styles = StyleSheet.create({
     color: colors.muted,
     lineHeight: 22,
     marginBottom: 4,
+  },
+
+  editingNotice: {
+    backgroundColor: colors.greenLight,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 8,
+  },
+
+  editingNoticeText: {
+    color: colors.green,
+    fontWeight: "900",
+    fontSize: 14,
+    lineHeight: 20,
   },
 
   label: {
@@ -330,6 +450,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
+  cancelButton: {
+    marginTop: 10,
+    backgroundColor: colors.input,
+    borderRadius: 18,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+
+  cancelButtonText: {
+    color: colors.green,
+    fontWeight: "900",
+    fontSize: 15,
+  },
+
   emptyText: {
     color: colors.muted,
     fontSize: 15,
@@ -348,6 +482,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 10,
   },
 
   workoutName: {
@@ -355,7 +490,12 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: colors.text,
     flex: 1,
-    marginRight: 10,
+  },
+
+  workoutActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   dayBadge: {
@@ -371,6 +511,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
+  optionsButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  optionsButtonText: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: -8,
+  },
+
   workoutExercises: {
     marginTop: 8,
     color: "#3e3b34",
@@ -383,5 +541,43 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 14,
     fontStyle: "italic",
+  },
+
+  actionMenu: {
+    marginTop: 12,
+    backgroundColor: colors.input,
+    borderRadius: 18,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 8,
+  },
+
+  actionMenuButton: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+
+  actionMenuButtonText: {
+    color: colors.green,
+    fontWeight: "900",
+    fontSize: 14,
+  },
+
+  actionMenuDeleteButton: {
+    backgroundColor: "#fff1ef",
+    borderWidth: 1,
+    borderColor: "#f0c5bf",
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+
+  actionMenuDeleteText: {
+    color: "#9f2f24",
+    fontWeight: "900",
+    fontSize: 14,
   },
 });
