@@ -14,17 +14,7 @@ export const workoutFocusOptions = [
   "Custom",
 ];
 
-function getWorkoutTitle(focus, customFocus) {
-  const typedFocus = customFocus.trim();
-
-  if (typedFocus) {
-    return `${typedFocus} Session`;
-  }
-
-  return `${focus} Session`;
-}
-
-export function buildWorkoutSuggestion({ focus, customFocus }) {
+export function buildWorkoutSuggestion({ focus }) {
   const suggestions = {
     Push: [
       "Warm-up 5 min",
@@ -157,7 +147,7 @@ export function buildWorkoutSuggestion({ focus, customFocus }) {
   const exercises = suggestions[focus] || suggestions.Custom;
 
   return {
-    name: getWorkoutTitle(focus, customFocus),
+    name: `${focus} Session`,
     exercises: exercises.join("\n"),
   };
 }

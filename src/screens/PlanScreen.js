@@ -14,7 +14,6 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
   const [exercises, setExercises] = useState("");
 
   const [focus, setFocus] = useState("Push");
-  const [customFocus, setCustomFocus] = useState("");
 
   function saveWorkout() {
     if (!workoutName.trim()) return;
@@ -31,13 +30,11 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
     setWorkoutName("");
     setSelectedDay("Mon");
     setExercises("");
-    setCustomFocus("");
   }
 
   function generateSuggestion() {
     const suggestion = buildWorkoutSuggestion({
       focus,
-      customFocus,
     });
 
     setWorkoutName(suggestion.name);
@@ -55,8 +52,8 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Suggest workout</Text>
         <Text style={styles.cardText}>
-          Pick one main focus. The app will fill the form below, then you can
-          edit anything before saving.
+          Pick one main focus. The app fills the form below, then you can edit
+          anything before saving.
         </Text>
 
         <Text style={styles.label}>What do you want to train?</Text>
@@ -77,15 +74,6 @@ export default function PlanScreen({ plannedWorkouts, onAddWorkout }) {
             );
           })}
         </View>
-
-        <Text style={styles.label}>Specific focus</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Optional: chest, jog, biceps, stamina, planche push..."
-          placeholderTextColor="#8b8578"
-          value={customFocus}
-          onChangeText={setCustomFocus}
-        />
 
         <Pressable style={styles.secondaryButton} onPress={generateSuggestion}>
           <Text style={styles.secondaryButtonText}>Generate suggestion</Text>

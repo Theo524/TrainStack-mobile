@@ -29,6 +29,7 @@ export default function WorkoutScreen({ activeWorkout }) {
   const [completedExercises, setCompletedExercises] = useState({});
 
   const exerciseLines = getExerciseLines(activeWorkout);
+
   const completedCount = exerciseLines.filter(
     (exercise, index) => completedExercises[`${exercise}-${index}`]
   ).length;
@@ -117,84 +118,27 @@ export default function WorkoutScreen({ activeWorkout }) {
   return (
     <View>
       <Text style={styles.eyebrow}>TRAIN</Text>
-      <Text style={styles.title}>Active Workout</Text>
+      <Text style={styles.title}>Train</Text>
       <Text style={styles.subtitle}>
-        Tick off exercises as you complete them.
+        Timer first, checklist underneath.
       </Text>
 
       {activeWorkout ? (
-        <View style={styles.activeWorkoutCard}>
-          <Text style={styles.activeWorkoutLabel}>Loaded workout</Text>
-          <Text style={styles.activeWorkoutTitle}>{activeWorkout.name}</Text>
-          <Text style={styles.activeWorkoutDay}>{activeWorkout.day}</Text>
-
-          {exerciseLines.length > 0 ? (
-            <>
-              <View style={styles.progressBox}>
-                <Text style={styles.progressText}>
-                  {completedCount} / {exerciseLines.length} completed
-                </Text>
-              </View>
-
-              <View style={styles.exerciseList}>
-                {exerciseLines.map((exercise, index) => {
-                  const key = `${exercise}-${index}`;
-                  const isCompleted = completedExercises[key];
-
-                  return (
-                    <Pressable
-                      key={key}
-                      style={
-                        isCompleted
-                          ? styles.exerciseRowCompleted
-                          : styles.exerciseRow
-                      }
-                      onPress={() => toggleExerciseComplete(exercise, index)}
-                    >
-                      <View
-                        style={
-                          isCompleted
-                            ? styles.checkCircleCompleted
-                            : styles.checkCircle
-                        }
-                      >
-                        <Text
-                          style={
-                            isCompleted
-                              ? styles.checkTextCompleted
-                              : styles.checkText
-                          }
-                        >
-                          {isCompleted ? "✓" : index + 1}
-                        </Text>
-                      </View>
-
-                      <Text
-                        style={
-                          isCompleted
-                            ? styles.exerciseTextCompleted
-                            : styles.exerciseText
-                        }
-                      >
-                        {exercise}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          ) : (
-            <Text style={styles.noExerciseText}>
-              This workout has no exercises yet.
+        <View style={styles.summaryCard}>
+          <View>
+            <Text style={styles.summaryLabel}>Loaded workout</Text>
+            <Text style={styles.summaryTitle}>{activeWorkout.name}</Text>
+            <Text style={styles.summaryMeta}>
+              {activeWorkout.day} • {completedCount}/{exerciseLines.length} done
             </Text>
-          )}
+          </View>
         </View>
       ) : (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>No workout loaded</Text>
-          <Text style={styles.cardText}>
-            Go to Today and press Start training on a scheduled workout. You can
-            still use the stopwatch manually.
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>No workout loaded</Text>
+          <Text style={styles.summaryTitle}>Manual timer mode</Text>
+          <Text style={styles.summaryMeta}>
+            Start a workout from Today, or use the timer by itself.
           </Text>
         </View>
       )}
@@ -291,6 +235,73 @@ export default function WorkoutScreen({ activeWorkout }) {
           </Pressable>
         </View>
       </View>
+
+      {activeWorkout ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Exercise checklist</Text>
+
+          {exerciseLines.length > 0 ? (
+            <>
+              <View style={styles.progressBox}>
+                <Text style={styles.progressText}>
+                  {completedCount} / {exerciseLines.length} completed
+                </Text>
+              </View>
+
+              <View style={styles.exerciseList}>
+                {exerciseLines.map((exercise, index) => {
+                  const key = `${exercise}-${index}`;
+                  const isCompleted = completedExercises[key];
+
+                  return (
+                    <Pressable
+                      key={key}
+                      style={
+                        isCompleted
+                          ? styles.exerciseRowCompleted
+                          : styles.exerciseRow
+                      }
+                      onPress={() => toggleExerciseComplete(exercise, index)}
+                    >
+                      <View
+                        style={
+                          isCompleted
+                            ? styles.checkCircleCompleted
+                            : styles.checkCircle
+                        }
+                      >
+                        <Text
+                          style={
+                            isCompleted
+                              ? styles.checkTextCompleted
+                              : styles.checkText
+                          }
+                        >
+                          {isCompleted ? "✓" : index + 1}
+                        </Text>
+                      </View>
+
+                      <Text
+                        style={
+                          isCompleted
+                            ? styles.exerciseTextCompleted
+                            : styles.exerciseText
+                        }
+                      >
+                        {exercise}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          ) : (
+            <Text style={styles.cardText}>
+              This workout has no exercises yet.
+            </Text>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -317,135 +328,43 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
-  activeWorkoutCard: {
+  summaryCard: {
     backgroundColor: colors.card,
-    borderRadius: 30,
-    padding: 22,
-    marginBottom: 18,
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: colors.border,
   },
 
-  activeWorkoutLabel: {
+  summaryLabel: {
     color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
     letterSpacing: 1,
     textTransform: "uppercase",
-    marginBottom: 6,
+    marginBottom: 5,
   },
 
-  activeWorkoutTitle: {
+  summaryTitle: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "900",
   },
 
-  activeWorkoutDay: {
+  summaryMeta: {
     color: colors.green,
     fontSize: 14,
-    fontWeight: "900",
-    marginTop: 4,
-  },
-
-  progressBox: {
-    backgroundColor: colors.greenLight,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginTop: 16,
-  },
-
-  progressText: {
-    color: colors.green,
-    fontWeight: "900",
-    fontSize: 14,
-  },
-
-  exerciseList: {
-    marginTop: 12,
-    gap: 10,
-  },
-
-  exerciseRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.input,
-    borderRadius: 16,
-    padding: 12,
-  },
-
-  exerciseRowCompleted: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.greenLight,
-    borderRadius: 16,
-    padding: 12,
-  },
-
-  checkCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-
-  checkCircleCompleted: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.green,
-    borderWidth: 1,
-    borderColor: colors.green,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-
-  checkText: {
-    color: colors.muted,
-    fontWeight: "900",
-    fontSize: 13,
-  },
-
-  checkTextCompleted: {
-    color: "#ffffff",
-    fontWeight: "900",
-    fontSize: 16,
-  },
-
-  exerciseText: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-
-  exerciseTextCompleted: {
-    flex: 1,
-    color: colors.green,
-    fontSize: 15,
-    fontWeight: "900",
-    textDecorationLine: "line-through",
-  },
-
-  noExerciseText: {
-    marginTop: 12,
-    color: colors.muted,
-    fontSize: 15,
-    lineHeight: 22,
+    fontWeight: "800",
+    marginTop: 5,
+    lineHeight: 20,
   },
 
   timerCard: {
     backgroundColor: colors.green,
     borderRadius: 30,
     padding: 24,
-    marginBottom: 18,
+    marginBottom: 14,
     alignItems: "center",
   },
 
@@ -497,7 +416,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 30,
     padding: 22,
-    marginBottom: 18,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: "center",
@@ -505,7 +424,7 @@ const styles = StyleSheet.create({
 
   restTimer: {
     color: colors.green,
-    fontSize: 50,
+    fontSize: 46,
     fontWeight: "900",
     marginTop: 4,
   },
@@ -513,7 +432,7 @@ const styles = StyleSheet.create({
   presetRow: {
     flexDirection: "row",
     gap: 8,
-    marginTop: 18,
+    marginTop: 16,
   },
 
   preset: {
@@ -588,5 +507,90 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.muted,
     lineHeight: 22,
+  },
+
+  progressBox: {
+    backgroundColor: colors.greenLight,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+
+  progressText: {
+    color: colors.green,
+    fontWeight: "900",
+    fontSize: 14,
+  },
+
+  exerciseList: {
+    gap: 10,
+  },
+
+  exerciseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.input,
+    borderRadius: 16,
+    padding: 12,
+  },
+
+  exerciseRowCompleted: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.greenLight,
+    borderRadius: 16,
+    padding: 12,
+  },
+
+  checkCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  checkCircleCompleted: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.green,
+    borderWidth: 1,
+    borderColor: colors.green,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  checkText: {
+    color: colors.muted,
+    fontWeight: "900",
+    fontSize: 13,
+  },
+
+  checkTextCompleted: {
+    color: "#ffffff",
+    fontWeight: "900",
+    fontSize: 16,
+  },
+
+  exerciseText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  exerciseTextCompleted: {
+    flex: 1,
+    color: colors.green,
+    fontSize: 15,
+    fontWeight: "900",
+    textDecorationLine: "line-through",
   },
 });
