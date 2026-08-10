@@ -1,28 +1,104 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "../styles/theme";
 
-export default function TodayScreen() {
+function getTodayShortDay() {
+  return new Date().toLocaleDateString("en-GB", {
+    weekday: "short",
+  });
+}
+
+function getFullDateLabel() {
+  return new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+export default function TodayScreen({
+  plannedWorkouts,
+  onGoToPlan,
+  onStartTraining,
+}) {
+  const todayShortDay = getTodayShortDay();
+  const todaysWorkouts = plannedWorkouts.filter(
+    (workout) => workout.day === todayShortDay
+  );
+
   return (
     <View>
       <Text style={styles.eyebrow}>TODAY</Text>
       <Text style={styles.title}>Today’s Workout</Text>
-      <Text style={styles.subtitle}>Your scheduled workout will appear here.</Text>
+      <Text style={styles.subtitle}>{getFullDateLabel()}</Text>
 
-      <View style={styles.heroCard}>
-        <Text style={styles.heroTitle}>No workout scheduled yet</Text>
-        <Text style={styles.heroText}>
-          Later, this screen will show your workout for today, the next exercise,
-          and a quick button to start training.
-        </Text>
+      {todaysWorkouts.length === 0 ? (
+        <View style={styles.heroCard}>
+          <Text style={styles.heroTitle}>No workout scheduled</Text>
+          <Text style={styles.heroText}>
+            You do not have a workout planned for {todayShortDay}. Add one in
+            the Plan tab and it will appear here.
+          </Text>
+
+          <Pressable style={styles.heroButton} onPress={onGoToPlan}>
+            <Text style={styles.heroButtonText}>Plan a workout</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.heroCard}>
+          <Text style={styles.heroSmall}>Scheduled for {todayShortDay}</Text>
+          <Text style={styles.heroTitle}>
+            {todaysWorkouts.length === 1
+              ? todaysWorkouts[0].name
+              : `${todaysWorkouts.length} workouts today`}
+          </Text>
+          <Text style={styles.heroText}>
+            Start training when you are ready. Next we’ll connect this directly
+            to the active workout timer.
+          </Text>
+
+          <Pressable style={styles.heroButton} onPress={onStartTraining}>
+            <Text style={styles.heroButtonText}>Start training</Text>
+          </Pressable>
+        </View>
+      )}
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Today’s plan</Text>
+
+        {todaysWorkouts.length === 0 ? (
+          <Text style={styles.cardText}>
+            Nothing planned yet. Go to Plan and create a workout for{" "}
+            {todayShortDay}.
+          </Text>
+        ) : (
+          todaysWorkouts.map((workout) => (
+            <View key={workout.id} style={styles.workoutItem}>
+              <View style={styles.workoutTopRow}>
+                <Text style={styles.workoutName}>{workout.name}</Text>
+                <View style={styles.dayBadge}>
+                  <Text style={styles.dayBadgeText}>{workout.day}</Text>
+                </View>
+              </View>
+
+              {workout.exercises ? (
+                <Text style={styles.workoutExercises}>{workout.exercises}</Text>
+              ) : (
+                <Text style={styles.workoutExercisesMuted}>
+                  No exercises added yet.
+                </Text>
+              )}
+            </View>
+          ))
+        )}
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Planned flow</Text>
-        <Text style={styles.cardText}>1. Check today’s workout</Text>
-        <Text style={styles.cardText}>2. Start workout mode</Text>
-        <Text style={styles.cardText}>3. Use stopwatch and rest timer</Text>
-        <Text style={styles.cardText}>4. Save completed workout</Text>
+        <Text style={styles.cardTitle}>How this screen works</Text>
+        <Text style={styles.cardText}>
+          Plan creates workouts for days of the week. Today checks the current
+          day and shows matching workouts here.
+        </Text>
       </View>
     </View>
   );
@@ -57,9 +133,16 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
+  heroSmall: {
+    color: colors.greenLight,
+    fontSize: 14,
+    fontWeight: "800",
+    marginBottom: 8,
+  },
+
   heroTitle: {
     color: "#ffffff",
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "900",
     marginBottom: 10,
   },
@@ -68,6 +151,20 @@ const styles = StyleSheet.create({
     color: colors.greenLight,
     fontSize: 15,
     lineHeight: 22,
+  },
+
+  heroButton: {
+    marginTop: 18,
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+
+  heroButtonText: {
+    color: colors.green,
+    fontWeight: "900",
+    fontSize: 15,
   },
 
   card: {
@@ -89,6 +186,55 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 15,
     color: colors.muted,
-    marginBottom: 8,
+    lineHeight: 22,
+  },
+
+  workoutItem: {
+    borderTopWidth: 1,
+    borderTopColor: "#eee8da",
+    paddingTop: 14,
+    paddingBottom: 4,
+    marginTop: 8,
+  },
+
+  workoutTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  workoutName: {
+    fontSize: 17,
+    fontWeight: "900",
+    color: colors.text,
+    flex: 1,
+    marginRight: 10,
+  },
+
+  dayBadge: {
+    backgroundColor: colors.greenLight,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+
+  dayBadgeText: {
+    color: colors.green,
+    fontWeight: "900",
+    fontSize: 12,
+  },
+
+  workoutExercises: {
+    marginTop: 8,
+    color: "#3e3b34",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  workoutExercisesMuted: {
+    marginTop: 8,
+    color: colors.muted,
+    fontSize: 14,
+    fontStyle: "italic",
   },
 });

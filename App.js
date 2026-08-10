@@ -30,7 +30,15 @@ function AppContent() {
   }
 
   function renderScreen() {
-    if (activeTab === "today") return <TodayScreen />;
+    if (activeTab === "today") {
+      return (
+        <TodayScreen
+          plannedWorkouts={plannedWorkouts}
+          onGoToPlan={() => setActiveTab("plan")}
+          onStartTraining={() => setActiveTab("train")}
+        />
+      );
+    }
 
     if (activeTab === "plan") {
       return (
@@ -45,7 +53,13 @@ function AppContent() {
     if (activeTab === "stats") return <StatsScreen />;
     if (activeTab === "more") return <MoreScreen />;
 
-    return <TodayScreen />;
+    return (
+      <TodayScreen
+        plannedWorkouts={plannedWorkouts}
+        onGoToPlan={() => setActiveTab("plan")}
+        onStartTraining={() => setActiveTab("train")}
+      />
+    );
   }
 
   return (
