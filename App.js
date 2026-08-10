@@ -23,10 +23,17 @@ import { colors, spacing } from "./src/styles/theme";
 function AppContent() {
   const [activeTab, setActiveTab] = useState("today");
   const [plannedWorkouts, setPlannedWorkouts] = useState([]);
+  const [activeWorkout, setActiveWorkout] = useState(null);
+
   const insets = useSafeAreaInsets();
 
   function addPlannedWorkout(newWorkout) {
     setPlannedWorkouts([newWorkout, ...plannedWorkouts]);
+  }
+
+  function startTraining(workout) {
+    setActiveWorkout(workout);
+    setActiveTab("train");
   }
 
   function renderScreen() {
@@ -35,7 +42,7 @@ function AppContent() {
         <TodayScreen
           plannedWorkouts={plannedWorkouts}
           onGoToPlan={() => setActiveTab("plan")}
-          onStartTraining={() => setActiveTab("train")}
+          onStartTraining={startTraining}
         />
       );
     }
@@ -49,7 +56,10 @@ function AppContent() {
       );
     }
 
-    if (activeTab === "train") return <WorkoutScreen />;
+    if (activeTab === "train") {
+      return <WorkoutScreen activeWorkout={activeWorkout} />;
+    }
+
     if (activeTab === "stats") return <StatsScreen />;
     if (activeTab === "more") return <MoreScreen />;
 
@@ -57,7 +67,7 @@ function AppContent() {
       <TodayScreen
         plannedWorkouts={plannedWorkouts}
         onGoToPlan={() => setActiveTab("plan")}
-        onStartTraining={() => setActiveTab("train")}
+        onStartTraining={startTraining}
       />
     );
   }

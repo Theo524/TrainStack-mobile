@@ -9,13 +9,24 @@ function formatTime(totalSeconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-export default function WorkoutScreen() {
+function getExerciseLines(activeWorkout) {
+  if (!activeWorkout || !activeWorkout.exercises) return [];
+
+  return activeWorkout.exercises
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+export default function WorkoutScreen({ activeWorkout }) {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
   const [restDuration, setRestDuration] = useState(60);
   const [restSeconds, setRestSeconds] = useState(60);
   const [isRestRunning, setIsRestRunning] = useState(false);
+
+  const exerciseLines = getExerciseLines(activeWorkout);
 
   useEffect(() => {
     let intervalId;
@@ -89,7 +100,40 @@ export default function WorkoutScreen() {
     <View>
       <Text style={styles.eyebrow}>TRAIN</Text>
       <Text style={styles.title}>Active Workout</Text>
-      <Text style={styles.subtitle}>Track workout time and rest between sets.</Text>
+      <Text style={styles.subtitle}>
+        Track workout time and rest between sets.
+      </Text>
+
+      {activeWorkout ? (
+        <View style={styles.activeWorkoutCard}>
+          <Text style={styles.activeWorkoutLabel}>Loaded workout</Text>
+          <Text style={styles.activeWorkoutTitle}>{activeWorkout.name}</Text>
+          <Text style={styles.activeWorkoutDay}>{activeWorkout.day}</Text>
+
+          {exerciseLines.length > 0 ? (
+            <View style={styles.exerciseList}>
+              {exerciseLines.map((exercise, index) => (
+                <View key={`${exercise}-${index}`} style={styles.exerciseRow}>
+                  <Text style={styles.exerciseNumber}>{index + 1}</Text>
+                  <Text style={styles.exerciseText}>{exercise}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.noExerciseText}>
+              This workout has no exercises yet.
+            </Text>
+          )}
+        </View>
+      ) : (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>No workout loaded</Text>
+          <Text style={styles.cardText}>
+            Go to Today and press Start training on a scheduled workout. You can
+            still use the stopwatch manually.
+          </Text>
+        </View>
+      )}
 
       <View style={styles.timerCard}>
         <Text style={styles.timerLabel}>Workout stopwatch</Text>
@@ -123,7 +167,13 @@ export default function WorkoutScreen() {
             style={restDuration === 30 ? styles.presetActive : styles.preset}
             onPress={() => chooseRestDuration(30)}
           >
-            <Text style={restDuration === 30 ? styles.presetTextActive : styles.presetText}>
+            <Text
+              style={
+                restDuration === 30
+                  ? styles.presetTextActive
+                  : styles.presetText
+              }
+            >
               30s
             </Text>
           </Pressable>
@@ -132,7 +182,13 @@ export default function WorkoutScreen() {
             style={restDuration === 60 ? styles.presetActive : styles.preset}
             onPress={() => chooseRestDuration(60)}
           >
-            <Text style={restDuration === 60 ? styles.presetTextActive : styles.presetText}>
+            <Text
+              style={
+                restDuration === 60
+                  ? styles.presetTextActive
+                  : styles.presetText
+              }
+            >
               60s
             </Text>
           </Pressable>
@@ -141,7 +197,13 @@ export default function WorkoutScreen() {
             style={restDuration === 90 ? styles.presetActive : styles.preset}
             onPress={() => chooseRestDuration(90)}
           >
-            <Text style={restDuration === 90 ? styles.presetTextActive : styles.presetText}>
+            <Text
+              style={
+                restDuration === 90
+                  ? styles.presetTextActive
+                  : styles.presetText
+              }
+            >
               90s
             </Text>
           </Pressable>
@@ -169,7 +231,8 @@ export default function WorkoutScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Next upgrade</Text>
         <Text style={styles.cardText}>
-          After this, we can add exercises and set tracking so you can tick off each set while training.
+          After this, we’ll add set checkboxes so you can tick off each set while
+          training.
         </Text>
       </View>
     </View>
@@ -196,6 +259,76 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.muted,
     marginBottom: 18,
+  },
+
+  activeWorkoutCard: {
+    backgroundColor: colors.card,
+    borderRadius: 30,
+    padding: 22,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  activeWorkoutLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+
+  activeWorkoutTitle: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: "900",
+  },
+
+  activeWorkoutDay: {
+    color: colors.green,
+    fontSize: 14,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+
+  exerciseList: {
+    marginTop: 16,
+    gap: 10,
+  },
+
+  exerciseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.input,
+    borderRadius: 16,
+    padding: 12,
+  },
+
+  exerciseNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.green,
+    color: "#ffffff",
+    textAlign: "center",
+    textAlignVertical: "center",
+    fontWeight: "900",
+    marginRight: 10,
+  },
+
+  exerciseText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  noExerciseText: {
+    marginTop: 12,
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22,
   },
 
   timerCard: {

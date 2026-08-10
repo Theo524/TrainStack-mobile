@@ -22,9 +22,12 @@ export default function TodayScreen({
   onStartTraining,
 }) {
   const todayShortDay = getTodayShortDay();
+
   const todaysWorkouts = plannedWorkouts.filter(
     (workout) => workout.day === todayShortDay
   );
+
+  const firstWorkout = todaysWorkouts[0];
 
   return (
     <View>
@@ -49,15 +52,18 @@ export default function TodayScreen({
           <Text style={styles.heroSmall}>Scheduled for {todayShortDay}</Text>
           <Text style={styles.heroTitle}>
             {todaysWorkouts.length === 1
-              ? todaysWorkouts[0].name
+              ? firstWorkout.name
               : `${todaysWorkouts.length} workouts today`}
           </Text>
           <Text style={styles.heroText}>
-            Start training when you are ready. Next we’ll connect this directly
-            to the active workout timer.
+            Start training when you are ready. The Train tab will load this
+            workout and keep the stopwatch/rest timer available.
           </Text>
 
-          <Pressable style={styles.heroButton} onPress={onStartTraining}>
+          <Pressable
+            style={styles.heroButton}
+            onPress={() => onStartTraining(firstWorkout)}
+          >
             <Text style={styles.heroButtonText}>Start training</Text>
           </Pressable>
         </View>
@@ -76,6 +82,7 @@ export default function TodayScreen({
             <View key={workout.id} style={styles.workoutItem}>
               <View style={styles.workoutTopRow}>
                 <Text style={styles.workoutName}>{workout.name}</Text>
+
                 <View style={styles.dayBadge}>
                   <Text style={styles.dayBadgeText}>{workout.day}</Text>
                 </View>
@@ -88,6 +95,13 @@ export default function TodayScreen({
                   No exercises added yet.
                 </Text>
               )}
+
+              <Pressable
+                style={styles.smallStartButton}
+                onPress={() => onStartTraining(workout)}
+              >
+                <Text style={styles.smallStartButtonText}>Start this workout</Text>
+              </Pressable>
             </View>
           ))
         )}
@@ -97,7 +111,8 @@ export default function TodayScreen({
         <Text style={styles.cardTitle}>How this screen works</Text>
         <Text style={styles.cardText}>
           Plan creates workouts for days of the week. Today checks the current
-          day and shows matching workouts here.
+          day and shows matching workouts here. Starting a workout sends it to
+          the Train screen.
         </Text>
       </View>
     </View>
@@ -236,5 +251,19 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 14,
     fontStyle: "italic",
+  },
+
+  smallStartButton: {
+    marginTop: 12,
+    backgroundColor: colors.green,
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+
+  smallStartButtonText: {
+    color: "#ffffff",
+    fontWeight: "900",
+    fontSize: 14,
   },
 });
