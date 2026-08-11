@@ -1,63 +1,19 @@
-# Command Fit Mobile
+# TrainStack
 
-A phone-first workout and personal command centre app.
+TrainStack is a mobile workout planning and training app built with Expo and React Native.
 
-The app starts as a workout logger with rest timers, session notes, and future modules built into the structure. It is made with Expo and React Native so it can run on Android, iOS, and web from one codebase.
+## Current features
 
-## Run On Your Phone
+- Workout planner
+- Workout suggestions
+- Today screen
+- Train screen
+- Exercise checklist
+- Finish workout flow
+- Stats and workout history
+- Edit/delete workout menus
+- Phone storage with AsyncStorage
 
-Install dependencies:
+## Version
 
-```bash
-npm install
-```
-
-Start the app:
-
-```bash
-npm run start
-```
-
-Then install **Expo Go** on your phone and scan the QR code from the terminal/browser.
-
-## Build An Android APK
-
-Install EAS CLI:
-
-```bash
-npm install -g eas-cli
-```
-
-Log in:
-
-```bash
-eas login
-```
-
-Build an APK:
-
-```bash
-eas build -p android --profile preview
-```
-
-The `preview` profile in `eas.json` is configured to produce an APK for direct Android installation.
-
-## Push To GitHub
-
-```bash
-git init
-git add .
-git commit -m "Initial Command Fit mobile app"
-git branch -M main
-git remote add origin YOUR_GITHUB_REPO_URL
-git push -u origin main
-```
-
-## Next Features
-
-- Save workouts locally
-- Exercise templates
-- Better rest timer flows
-- Weekly progress dashboard
-- AI coach module
-- Website/release monitoring module
+v0.1.0 test APK

@@ -22,8 +22,8 @@ import StatsScreen from "./src/screens/StatsScreen";
 import MoreScreen from "./src/screens/MoreScreen";
 import { colors, spacing } from "./src/styles/theme";
 
-const PLANNED_WORKOUTS_KEY = "command-fit-planned-workouts";
-const COMPLETED_WORKOUTS_KEY = "command-fit-completed-workouts";
+const PLANNED_WORKOUTS_KEY = "trainstack-planned-workouts";
+const COMPLETED_WORKOUTS_KEY = "trainstack-completed-workouts";
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState("today");
@@ -230,7 +230,7 @@ function AppContent() {
         <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
         <View style={styles.loadingScreen}>
-          <Text style={styles.loadingTitle}>Command Fit</Text>
+          <Text style={styles.loadingTitle}>TrainStack</Text>
           <Text style={styles.loadingText}>Loading saved workouts...</Text>
         </View>
       </SafeAreaView>

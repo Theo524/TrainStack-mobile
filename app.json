@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Command Fit",
-    "slug": "command-fit",
+    "name": "TrainStack",
+    "slug": "trainstack",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,14 +12,11 @@
       "resizeMode": "contain",
       "backgroundColor": "#F4F1EA"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.commandfit.mobile",
+      "package": "com.trainstack.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F4F1EA"
@@ -30,7 +27,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "398b3f85-fbdc-430a-b323-a86d69a1b629"
+        "projectId": "f5f05c11-70c7-4c1d-8420-b357b31d5cdc"
       }
     },
     "owner": "minilobezno"
