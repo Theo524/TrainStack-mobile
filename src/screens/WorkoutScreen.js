@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { colors } from "../styles/theme";
 
@@ -50,6 +57,7 @@ export default function WorkoutScreen({
   const [restTimerSeconds, setRestTimerSeconds] = useState(60);
   const [restRemainingSeconds, setRestRemainingSeconds] = useState(0);
   const [restTimerRunning, setRestTimerRunning] = useState(false);
+  const [customRestInput, setCustomRestInput] = useState("45");
 
   const exerciseLines = useMemo(
     () => getExerciseLines(activeWorkout),
@@ -129,6 +137,27 @@ export default function WorkoutScreen({
     setRestTimerSeconds(seconds);
     setRestRemainingSeconds(seconds);
     setRestTimerRunning(true);
+  }
+
+  function startCustomRestTimer() {
+    const customSeconds = Number(customRestInput);
+
+    if (!customRestInput.trim() || Number.isNaN(customSeconds)) {
+      Alert.alert("Invalid rest time", "Type a rest time in seconds first.");
+      return;
+    }
+
+    if (customSeconds < 1) {
+      Alert.alert("Invalid rest time", "Rest time must be at least 1 second.");
+      return;
+    }
+
+    if (customSeconds > 3600) {
+      Alert.alert("Rest time too long", "Use 3600 seconds or less.");
+      return;
+    }
+
+    startRestTimer(customSeconds);
   }
 
   function resetRestTimer() {
@@ -270,8 +299,32 @@ export default function WorkoutScreen({
             </Pressable>
           </View>
 
+          <View style={styles.customRestSection}>
+            <Text style={styles.customRestLabel}>Custom rest seconds</Text>
+
+            <View style={styles.customRestRow}>
+              <TextInput
+                style={styles.customRestInput}
+                value={customRestInput}
+                onChangeText={(text) =>
+                  setCustomRestInput(text.replace(/[^0-9]/g, ""))
+                }
+                placeholder="45"
+                placeholderTextColor={colors.muted}
+                keyboardType="number-pad"
+              />
+
+              <Pressable
+                style={styles.customRestButton}
+                onPress={startCustomRestTimer}
+              >
+                <Text style={styles.customRestButtonText}>Start</Text>
+              </Pressable>
+            </View>
+          </View>
+
           <Text style={styles.restHint}>
-            {restTimerRunning ? "Rest timer running" : "Pick a rest time"}
+            {restTimerRunning ? "Rest timer running" : "Pick or type a rest time"}
           </Text>
         </View>
       </>
@@ -604,7 +657,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 14,
   },
 
   restButton: {
@@ -619,6 +672,50 @@ const styles = StyleSheet.create({
   restButtonText: {
     color: colors.green,
     fontSize: 13,
+    fontWeight: "900",
+  },
+
+  customRestSection: {
+    marginBottom: 10,
+  },
+
+  customRestLabel: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: colors.muted,
+    marginBottom: 8,
+  },
+
+  customRestRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  customRestInput: {
+    flex: 1,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.text,
+  },
+
+  customRestButton: {
+    backgroundColor: colors.green,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  customRestButtonText: {
+    color: "#ffffff",
+    fontSize: 14,
     fontWeight: "900",
   },
 
