@@ -26,6 +26,7 @@ import { colors, spacing } from "./src/styles/theme";
 const PLANNED_WORKOUTS_KEY = "trainstack-planned-workouts";
 const COMPLETED_WORKOUTS_KEY = "trainstack-completed-workouts";
 const WORKOUT_TEMPLATES_KEY = "trainstack-workout-templates";
+const CUSTOM_EXERCISES_KEY = "trainstack-custom-exercises";
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState("today");
@@ -33,6 +34,7 @@ function AppContent() {
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [completedWorkouts, setCompletedWorkouts] = useState([]);
   const [workoutTemplates, setWorkoutTemplates] = useState([]);
+  const [customExercises, setCustomExercises] = useState([]);
   const [storageLoaded, setStorageLoaded] = useState(false);
 
   const scrollViewRef = useRef(null);
@@ -53,6 +55,10 @@ function AppContent() {
           WORKOUT_TEMPLATES_KEY
         );
 
+        const savedCustomExercises = await AsyncStorage.getItem(
+          CUSTOM_EXERCISES_KEY
+        );
+
         if (savedPlannedWorkouts) {
           setPlannedWorkouts(JSON.parse(savedPlannedWorkouts));
         }
@@ -63,6 +69,10 @@ function AppContent() {
 
         if (savedWorkoutTemplates) {
           setWorkoutTemplates(JSON.parse(savedWorkoutTemplates));
+        }
+
+        if (savedCustomExercises) {
+          setCustomExercises(JSON.parse(savedCustomExercises));
         }
       } catch (error) {
         console.log("Could not load saved workout data:", error);
@@ -125,6 +135,23 @@ function AppContent() {
     saveWorkoutTemplates();
   }, [workoutTemplates, storageLoaded]);
 
+  useEffect(() => {
+    if (!storageLoaded) return;
+
+    async function saveCustomExercises() {
+      try {
+        await AsyncStorage.setItem(
+          CUSTOM_EXERCISES_KEY,
+          JSON.stringify(customExercises)
+        );
+      } catch (error) {
+        console.log("Could not save custom exercises:", error);
+      }
+    }
+
+    saveCustomExercises();
+  }, [customExercises, storageLoaded]);
+
   function addPlannedWorkout(newWorkout) {
     setPlannedWorkouts((currentWorkouts) => [newWorkout, ...currentWorkouts]);
   }
@@ -169,6 +196,16 @@ function AppContent() {
     );
   }
 
+  function addCustomExercise(newExercise) {
+    setCustomExercises((currentExercises) => [newExercise, ...currentExercises]);
+  }
+
+  function deleteCustomExercise(exerciseId) {
+    setCustomExercises((currentExercises) =>
+      currentExercises.filter((exercise) => exercise.id !== exerciseId)
+    );
+  }
+
   function resetPlannedWorkouts() {
     setPlannedWorkouts([]);
     setActiveWorkout(null);
@@ -186,6 +223,7 @@ function AppContent() {
     setPlannedWorkouts([]);
     setCompletedWorkouts([]);
     setWorkoutTemplates([]);
+    setCustomExercises([]);
     setActiveWorkout(null);
   }
 
@@ -246,6 +284,7 @@ function AppContent() {
         <PlanScreen
           plannedWorkouts={plannedWorkouts}
           workoutTemplates={workoutTemplates}
+          customExercises={customExercises}
           onAddWorkout={addPlannedWorkout}
           onUpdateWorkout={updatePlannedWorkout}
           onDeleteWorkout={deletePlannedWorkout}
@@ -267,7 +306,13 @@ function AppContent() {
     }
 
     if (activeTab === "library") {
-      return <LibraryScreen />;
+      return (
+        <LibraryScreen
+          customExercises={customExercises}
+          onAddCustomExercise={addCustomExercise}
+          onDeleteCustomExercise={deleteCustomExercise}
+        />
+      );
     }
 
     if (activeTab === "stats") {

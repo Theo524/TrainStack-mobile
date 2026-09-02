@@ -1,17 +1,44 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { exerciseCategories, exerciseLibrary } from "../data/exerciseLibrary";
 import { colors } from "../styles/theme";
 
-export default function LibraryScreen() {
+const customCategoryOptions = exerciseCategories.filter(
+  (category) => category !== "All"
+);
+
+export default function LibraryScreen({
+  customExercises = [],
+  onAddCustomExercise,
+  onDeleteCustomExercise,
+}) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchText, setSearchText] = useState("");
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customCategory, setCustomCategory] = useState("Push");
+  const [customTarget, setCustomTarget] = useState("");
+  const [customDescription, setCustomDescription] = useState("");
+
+  const allExercises = useMemo(() => {
+    return [
+      ...customExercises.map((exercise) => ({
+        ...exercise,
+        isCustom: true,
+      })),
+      ...exerciseLibrary.map((exercise) => ({
+        ...exercise,
+        isCustom: false,
+      })),
+    ];
+  }, [customExercises]);
 
   const filteredExercises = useMemo(() => {
     const cleanSearchText = searchText.trim().toLowerCase();
 
-    return exerciseLibrary.filter((exercise) => {
+    return allExercises.filter((exercise) => {
       const matchesCategory =
         selectedCategory === "All" || exercise.category === selectedCategory;
 
@@ -24,7 +51,60 @@ export default function LibraryScreen() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchText]);
+  }, [allExercises, selectedCategory, searchText]);
+
+  function resetCustomForm() {
+    setCustomName("");
+    setCustomCategory("Push");
+    setCustomTarget("");
+    setCustomDescription("");
+  }
+
+  function saveCustomExercise() {
+    const cleanName = customName.trim();
+    const cleanTarget = customTarget.trim();
+    const cleanDescription = customDescription.trim();
+
+    if (!cleanName) {
+      Alert.alert("Missing name", "Type an exercise name first.");
+      return;
+    }
+
+    const newExercise = {
+      id: `custom-${Date.now()}`,
+      name: cleanName,
+      category: customCategory,
+      level: "Custom",
+      target: cleanTarget || "Custom target",
+      description:
+        cleanDescription || "Custom exercise added to your TrainStack library.",
+      createdAt: new Date().toISOString(),
+    };
+
+    onAddCustomExercise(newExercise);
+    resetCustomForm();
+    setShowAddForm(false);
+
+    Alert.alert("Exercise added", `"${newExercise.name}" was added.`);
+  }
+
+  function confirmDeleteCustomExercise(exercise) {
+    Alert.alert(
+      "Delete custom exercise?",
+      `Delete "${exercise.name}" from your library?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => onDeleteCustomExercise(exercise.id),
+        },
+      ]
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -32,9 +112,95 @@ export default function LibraryScreen() {
         <Text style={styles.kicker}>Exercise Library</Text>
         <Text style={styles.title}>Build smarter workouts</Text>
         <Text style={styles.subtitle}>
-          Browse exercises by training style, skill goal, or body focus.
+          Browse built-in exercises or add your own custom movements.
         </Text>
       </View>
+
+      <Pressable
+        style={styles.addCustomToggleButton}
+        onPress={() => setShowAddForm((currentValue) => !currentValue)}
+      >
+        <Text style={styles.addCustomToggleButtonText}>
+          {showAddForm ? "Hide custom exercise form" : "Add custom exercise"}
+        </Text>
+      </Pressable>
+
+      {showAddForm && (
+        <View style={styles.customFormCard}>
+          <Text style={styles.formTitle}>New custom exercise</Text>
+          <Text style={styles.formSubtitle}>
+            Add exercises that are not already in the built-in library.
+          </Text>
+
+          <Text style={styles.label}>Exercise name</Text>
+          <TextInput
+            style={styles.input}
+            value={customName}
+            onChangeText={setCustomName}
+            placeholder="Example: Muscle-ups"
+            placeholderTextColor={colors.muted}
+          />
+
+          <Text style={styles.label}>Category</Text>
+          <View style={styles.customCategoryWrap}>
+            {customCategoryOptions.map((category) => {
+              const isActive = customCategory === category;
+
+              return (
+                <Pressable
+                  key={category}
+                  style={
+                    isActive
+                      ? styles.customCategoryChipActive
+                      : styles.customCategoryChip
+                  }
+                  onPress={() => setCustomCategory(category)}
+                >
+                  <Text
+                    style={
+                      isActive
+                        ? styles.customCategoryChipTextActive
+                        : styles.customCategoryChipText
+                    }
+                  >
+                    {category}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.label}>Target</Text>
+          <TextInput
+            style={styles.input}
+            value={customTarget}
+            onChangeText={setCustomTarget}
+            placeholder="Example: Back, biceps, explosiveness"
+            placeholderTextColor={colors.muted}
+          />
+
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            style={styles.descriptionInput}
+            value={customDescription}
+            onChangeText={setCustomDescription}
+            placeholder="Quick note on how to do it..."
+            placeholderTextColor={colors.muted}
+            multiline
+            textAlignVertical="top"
+          />
+
+          <View style={styles.formButtonRow}>
+            <Pressable style={styles.cancelButton} onPress={resetCustomForm}>
+              <Text style={styles.cancelButtonText}>Clear</Text>
+            </Pressable>
+
+            <Pressable style={styles.saveCustomButton} onPress={saveCustomExercise}>
+              <Text style={styles.saveCustomButtonText}>Save exercise</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       <TextInput
         style={styles.searchInput}
@@ -102,7 +268,9 @@ export default function LibraryScreen() {
                 </View>
 
                 <View style={styles.levelBadge}>
-                  <Text style={styles.levelBadgeText}>{exercise.level}</Text>
+                  <Text style={styles.levelBadgeText}>
+                    {exercise.isCustom ? "Custom" : exercise.level}
+                  </Text>
                 </View>
               </View>
 
@@ -113,6 +281,17 @@ export default function LibraryScreen() {
               <Text style={styles.exerciseDescription}>
                 {exercise.description}
               </Text>
+
+              {exercise.isCustom && (
+                <Pressable
+                  style={styles.deleteCustomButton}
+                  onPress={() => confirmDeleteCustomExercise(exercise)}
+                >
+                  <Text style={styles.deleteCustomButtonText}>
+                    Delete custom exercise
+                  </Text>
+                </Pressable>
+              )}
             </View>
           ))}
         </View>
@@ -151,6 +330,151 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.muted,
     lineHeight: 22,
+  },
+
+  addCustomToggleButton: {
+    backgroundColor: colors.green,
+    borderRadius: 18,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginBottom: 14,
+  },
+
+  addCustomToggleButtonText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  customFormCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 14,
+  },
+
+  formTitle: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 4,
+  },
+
+  formSubtitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.muted,
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+
+  label: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 8,
+  },
+
+  input: {
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.text,
+    marginBottom: 14,
+  },
+
+  descriptionInput: {
+    minHeight: 90,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.text,
+    lineHeight: 21,
+    marginBottom: 14,
+  },
+
+  customCategoryWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 14,
+  },
+
+  customCategoryChip: {
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
+
+  customCategoryChipActive: {
+    backgroundColor: colors.green,
+    borderWidth: 1,
+    borderColor: colors.green,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
+
+  customCategoryChipText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  customCategoryChipTextActive: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  formButtonRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  cancelButton: {
+    flex: 1,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingVertical: 13,
+    alignItems: "center",
+  },
+
+  cancelButtonText: {
+    color: colors.muted,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  saveCustomButton: {
+    flex: 1,
+    backgroundColor: colors.green,
+    borderRadius: 16,
+    paddingVertical: 13,
+    alignItems: "center",
+  },
+
+  saveCustomButtonText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900",
   },
 
   searchInput: {
@@ -295,6 +619,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.text,
     lineHeight: 21,
+  },
+
+  deleteCustomButton: {
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 12,
+  },
+
+  deleteCustomButtonText: {
+    color: "#b42318",
+    fontSize: 13,
+    fontWeight: "900",
   },
 
   emptyCard: {

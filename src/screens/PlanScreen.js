@@ -20,6 +20,7 @@ const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export default function PlanScreen({
   plannedWorkouts,
   workoutTemplates,
+  customExercises = [],
   onAddWorkout,
   onUpdateWorkout,
   onDeleteWorkout,
@@ -40,10 +41,23 @@ export default function PlanScreen({
 
   const [showTemplates, setShowTemplates] = useState(false);
 
+  const allLibraryExercises = useMemo(() => {
+    return [
+      ...customExercises.map((exercise) => ({
+        ...exercise,
+        isCustom: true,
+      })),
+      ...exerciseLibrary.map((exercise) => ({
+        ...exercise,
+        isCustom: false,
+      })),
+    ];
+  }, [customExercises]);
+
   const filteredLibraryExercises = useMemo(() => {
     const cleanSearch = librarySearchText.trim().toLowerCase();
 
-    return exerciseLibrary.filter((exercise) => {
+    return allLibraryExercises.filter((exercise) => {
       const matchesCategory =
         libraryCategory === "All" || exercise.category === libraryCategory;
 
@@ -56,7 +70,7 @@ export default function PlanScreen({
 
       return matchesCategory && matchesSearch;
     });
-  }, [libraryCategory, librarySearchText]);
+  }, [allLibraryExercises, libraryCategory, librarySearchText]);
 
   function resetForm() {
     setWorkoutName("");
@@ -458,6 +472,7 @@ export default function PlanScreen({
                 <View style={styles.libraryExerciseInfo}>
                   <Text style={styles.libraryExerciseName}>{exercise.name}</Text>
                   <Text style={styles.libraryExerciseTarget}>
+                    {exercise.isCustom ? "Custom • " : ""}
                     {exercise.category} • {exercise.target}
                   </Text>
                 </View>
