@@ -7,8 +7,8 @@ const tabs = [
   { id: "today", label: "Today" },
   { id: "plan", label: "Plan" },
   { id: "train", label: "Train" },
+  { id: "library", label: "Library" },
   { id: "stats", label: "Stats" },
-  { id: "more", label: "More" },
 ];
 
 export default function BottomNav({ activeTab, onChangeTab }) {
@@ -73,12 +73,12 @@ const styles = StyleSheet.create({
   navText: {
     color: colors.muted,
     fontWeight: "800",
-    fontSize: 11,
+    fontSize: 10,
   },
 
   navTextActive: {
     color: "#ffffff",
     fontWeight: "900",
-    fontSize: 11,
+    fontSize: 10,
   },
 });

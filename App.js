@@ -18,8 +18,8 @@ import BottomNav from "./src/components/BottomNav";
 import TodayScreen from "./src/screens/TodayScreen";
 import PlanScreen from "./src/screens/PlanScreen";
 import WorkoutScreen from "./src/screens/WorkoutScreen";
+import LibraryScreen from "./src/screens/LibraryScreen";
 import StatsScreen from "./src/screens/StatsScreen";
-import MoreScreen from "./src/screens/MoreScreen";
 import { colors, spacing } from "./src/styles/theme";
 
 const PLANNED_WORKOUTS_KEY = "trainstack-planned-workouts";
@@ -204,6 +204,10 @@ function AppContent() {
       );
     }
 
+    if (activeTab === "library") {
+      return <LibraryScreen />;
+    }
+
     if (activeTab === "stats") {
       return (
         <StatsScreen
@@ -212,8 +216,6 @@ function AppContent() {
         />
       );
     }
-
-    if (activeTab === "more") return <MoreScreen />;
 
     return (
       <TodayScreen
