@@ -1,11 +1,20 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { getDailyMotivationalQuote } from "../data/motivationalQuotes";
 import { colors } from "../styles/theme";
 
 function getTodayShortDay() {
   return new Date().toLocaleDateString("en-GB", {
     weekday: "short",
+  });
+}
+
+function getTodayFullDate() {
+  return new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
   });
 }
 
@@ -25,6 +34,8 @@ export default function TodayScreen({
   onStartTraining,
 }) {
   const todayShortDay = getTodayShortDay();
+  const todayFullDate = getTodayFullDate();
+  const dailyQuote = getDailyMotivationalQuote();
 
   const todaysWorkouts = plannedWorkouts.filter(
     (workout) => workout.day === todayShortDay
@@ -37,10 +48,8 @@ export default function TodayScreen({
       <View style={styles.headerTopRow}>
         <View style={styles.headerTextWrap}>
           <Text style={styles.kicker}>Today</Text>
-          <Text style={styles.title}>Ready to train?</Text>
-          <Text style={styles.subtitle}>
-            Your planned workouts for {todayShortDay} are shown here.
-          </Text>
+          <Text style={styles.title}>Today's workout</Text>
+          <Text style={styles.dateText}>{todayFullDate}</Text>
         </View>
 
         <Pressable style={styles.settingsButton} onPress={onGoToMore}>
@@ -48,8 +57,13 @@ export default function TodayScreen({
         </Pressable>
       </View>
 
+      <View style={styles.quoteCard}>
+        <Text style={styles.quoteLabel}>Daily focus</Text>
+        <Text style={styles.quoteText}>“{dailyQuote}”</Text>
+      </View>
+
       <View style={styles.heroCard}>
-        <Text style={styles.heroLabel}>Today&apos;s focus</Text>
+        <Text style={styles.heroLabel}>Today's focus</Text>
 
         {firstWorkout ? (
           <>
@@ -81,7 +95,7 @@ export default function TodayScreen({
       </View>
 
       <View style={styles.sectionTopRow}>
-        <Text style={styles.sectionTitle}>Today&apos;s workouts</Text>
+        <Text style={styles.sectionTitle}>Today's workouts</Text>
 
         <Pressable onPress={onGoToPlan}>
           <Text style={styles.sectionAction}>Plan</Text>
@@ -136,7 +150,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 12,
-    marginBottom: 18,
+    marginBottom: 14,
   },
 
   headerTextWrap: {
@@ -156,12 +170,12 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: "900",
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: 6,
   },
 
-  subtitle: {
+  dateText: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "800",
     color: colors.muted,
     lineHeight: 22,
   },
@@ -180,6 +194,31 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
+  },
+
+  quoteCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 14,
+  },
+
+  quoteLabel: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 6,
+  },
+
+  quoteText: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "900",
+    lineHeight: 24,
   },
 
   heroCard: {

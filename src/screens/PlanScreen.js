@@ -86,7 +86,7 @@ export default function PlanScreen({
       exercises: cleanExercises,
       focus,
       updatedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
+      createdAt: editingWorkoutId ? undefined : new Date().toISOString(),
     };
 
     if (editingWorkoutId) {
@@ -130,6 +130,7 @@ export default function PlanScreen({
     setWorkoutName(template.name);
     setExercises(template.exercises);
     setFocus(template.focus || "Custom");
+    setEditingWorkoutId(null);
     setShowTemplates(false);
 
     setTimeout(() => {
@@ -160,6 +161,7 @@ export default function PlanScreen({
 
     setWorkoutName(suggestion.name);
     setExercises(suggestion.exercises);
+    setEditingWorkoutId(null);
   }
 
   function startEditingWorkout(workout) {
@@ -169,6 +171,24 @@ export default function PlanScreen({
     setFocus(workout.focus || "Custom");
     setEditingWorkoutId(workout.id);
     setOpenMenuWorkoutId(null);
+
+    setTimeout(() => {
+      onScrollToTop?.();
+    }, 50);
+  }
+
+  function duplicateWorkout(workout) {
+    setWorkoutName(`${workout.name} Copy`);
+    setSelectedDay(workout.day);
+    setExercises(workout.exercises);
+    setFocus(workout.focus || "Custom");
+    setEditingWorkoutId(null);
+    setOpenMenuWorkoutId(null);
+
+    Alert.alert(
+      "Workout copied",
+      "Change the day if you want, then tap Save workout to create the duplicate."
+    );
 
     setTimeout(() => {
       onScrollToTop?.();
@@ -502,6 +522,13 @@ export default function PlanScreen({
                           onPress={() => startEditingWorkout(workout)}
                         >
                           <Text style={styles.menuItemText}>Edit</Text>
+                        </Pressable>
+
+                        <Pressable
+                          style={styles.menuItem}
+                          onPress={() => duplicateWorkout(workout)}
+                        >
+                          <Text style={styles.menuItemText}>Duplicate</Text>
                         </Pressable>
 
                         <Pressable
@@ -1158,7 +1185,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 16,
     paddingVertical: 6,
-    width: 120,
+    width: 135,
     zIndex: 10,
   },
 
