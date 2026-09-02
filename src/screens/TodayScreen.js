@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
 import { colors } from "../styles/theme";
 
 function getTodayShortDay() {
@@ -8,17 +9,19 @@ function getTodayShortDay() {
   });
 }
 
-function getFullDateLabel() {
-  return new Date().toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+function getExerciseCount(workout) {
+  if (!workout?.exercises) return 0;
+
+  return workout.exercises
+    .split("\n")
+    .map((exercise) => exercise.trim())
+    .filter((exercise) => exercise.length > 0).length;
 }
 
 export default function TodayScreen({
   plannedWorkouts,
   onGoToPlan,
+  onGoToMore,
   onStartTraining,
 }) {
   const todayShortDay = getTodayShortDay();
@@ -30,146 +33,187 @@ export default function TodayScreen({
   const firstWorkout = todaysWorkouts[0];
 
   return (
-    <View>
-      <Text style={styles.eyebrow}>TODAY</Text>
-      <Text style={styles.title}>Today’s Workout</Text>
-      <Text style={styles.subtitle}>{getFullDateLabel()}</Text>
-
-      {todaysWorkouts.length === 0 ? (
-        <View style={styles.heroCard}>
-          <Text style={styles.heroTitle}>No workout scheduled</Text>
-          <Text style={styles.heroText}>
-            You do not have a workout planned for {todayShortDay}. Add one in
-            the Plan tab and it will appear here.
+    <View style={styles.screen}>
+      <View style={styles.headerTopRow}>
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.kicker}>Today</Text>
+          <Text style={styles.title}>Ready to train?</Text>
+          <Text style={styles.subtitle}>
+            Your planned workouts for {todayShortDay} are shown here.
           </Text>
-
-          <Pressable style={styles.heroButton} onPress={onGoToPlan}>
-            <Text style={styles.heroButtonText}>Plan a workout</Text>
-          </Pressable>
         </View>
-      ) : (
-        <View style={styles.heroCard}>
-          <Text style={styles.heroSmall}>Scheduled for {todayShortDay}</Text>
-          <Text style={styles.heroTitle}>
-            {todaysWorkouts.length === 1
-              ? firstWorkout.name
-              : `${todaysWorkouts.length} workouts today`}
-          </Text>
-          <Text style={styles.heroText}>
-            Start training when you are ready. The Train tab will load this
-            workout and keep the stopwatch/rest timer available.
-          </Text>
 
-          <Pressable
-            style={styles.heroButton}
-            onPress={() => onStartTraining(firstWorkout)}
-          >
-            <Text style={styles.heroButtonText}>Start training</Text>
-          </Pressable>
-        </View>
-      )}
+        <Pressable style={styles.settingsButton} onPress={onGoToMore}>
+          <Text style={styles.settingsButtonText}>Settings</Text>
+        </Pressable>
+      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Today’s plan</Text>
+      <View style={styles.heroCard}>
+        <Text style={styles.heroLabel}>Today&apos;s focus</Text>
 
-        {todaysWorkouts.length === 0 ? (
-          <Text style={styles.cardText}>
-            Nothing planned yet. Go to Plan and create a workout for{" "}
-            {todayShortDay}.
-          </Text>
+        {firstWorkout ? (
+          <>
+            <Text style={styles.heroTitle}>{firstWorkout.name}</Text>
+            <Text style={styles.heroText}>
+              {firstWorkout.focus || "Custom"} • {getExerciseCount(firstWorkout)}{" "}
+              exercise{getExerciseCount(firstWorkout) === 1 ? "" : "s"}
+            </Text>
+
+            <Pressable
+              style={styles.heroButton}
+              onPress={() => onStartTraining(firstWorkout)}
+            >
+              <Text style={styles.heroButtonText}>Start training</Text>
+            </Pressable>
+          </>
         ) : (
-          todaysWorkouts.map((workout) => (
-            <View key={workout.id} style={styles.workoutItem}>
-              <View style={styles.workoutTopRow}>
-                <Text style={styles.workoutName}>{workout.name}</Text>
+          <>
+            <Text style={styles.heroTitle}>No workout planned</Text>
+            <Text style={styles.heroText}>
+              Plan a workout for today and it will appear here.
+            </Text>
 
-                <View style={styles.dayBadge}>
-                  <Text style={styles.dayBadgeText}>{workout.day}</Text>
-                </View>
-              </View>
-
-              {workout.exercises ? (
-                <Text style={styles.workoutExercises}>{workout.exercises}</Text>
-              ) : (
-                <Text style={styles.workoutExercisesMuted}>
-                  No exercises added yet.
-                </Text>
-              )}
-
-              <Pressable
-                style={styles.smallStartButton}
-                onPress={() => onStartTraining(workout)}
-              >
-                <Text style={styles.smallStartButtonText}>Start this workout</Text>
-              </Pressable>
-            </View>
-          ))
+            <Pressable style={styles.heroButton} onPress={onGoToPlan}>
+              <Text style={styles.heroButtonText}>Plan workout</Text>
+            </Pressable>
+          </>
         )}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>How this screen works</Text>
-        <Text style={styles.cardText}>
-          Plan creates workouts for days of the week. Today checks the current
-          day and shows matching workouts here. Starting a workout sends it to
-          the Train screen.
-        </Text>
+      <View style={styles.sectionTopRow}>
+        <Text style={styles.sectionTitle}>Today&apos;s workouts</Text>
+
+        <Pressable onPress={onGoToPlan}>
+          <Text style={styles.sectionAction}>Plan</Text>
+        </Pressable>
       </View>
+
+      {todaysWorkouts.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>Nothing scheduled today</Text>
+          <Text style={styles.emptyText}>
+            Go to Plan and create a workout for {todayShortDay}.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.workoutList}>
+          {todaysWorkouts.map((workout) => (
+            <View key={workout.id} style={styles.workoutCard}>
+              <View style={styles.workoutTopRow}>
+                <View style={styles.workoutTitleWrap}>
+                  <Text style={styles.workoutDay}>{workout.day}</Text>
+                  <Text style={styles.workoutName}>{workout.name}</Text>
+                  <Text style={styles.workoutFocus}>
+                    {workout.focus || "Custom"} workout •{" "}
+                    {getExerciseCount(workout)} exercise
+                    {getExerciseCount(workout) === 1 ? "" : "s"}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.workoutExercises}>{workout.exercises}</Text>
+
+              <Pressable
+                style={styles.startButton}
+                onPress={() => onStartTraining(workout)}
+              >
+                <Text style={styles.startButtonText}>Start this workout</Text>
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  eyebrow: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 2,
-    color: "#4d6b58",
+  screen: {
+    paddingTop: 12,
+  },
+
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 18,
+  },
+
+  headerTextWrap: {
+    flex: 1,
+  },
+
+  kicker: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: colors.accent,
     marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
 
   title: {
     fontSize: 34,
     fontWeight: "900",
     color: colors.text,
+    marginBottom: 8,
   },
 
   subtitle: {
-    marginTop: 5,
     fontSize: 15,
+    fontWeight: "700",
     color: colors.muted,
-    marginBottom: 18,
+    lineHeight: 22,
+  },
+
+  settingsButton: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    alignSelf: "flex-start",
+  },
+
+  settingsButtonText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "900",
   },
 
   heroCard: {
     backgroundColor: colors.green,
     borderRadius: 28,
-    padding: 24,
-    marginBottom: 18,
+    padding: 22,
+    marginBottom: 24,
   },
 
-  heroSmall: {
+  heroLabel: {
     color: colors.greenLight,
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
     marginBottom: 8,
   },
 
   heroTitle: {
     color: "#ffffff",
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "900",
-    marginBottom: 10,
+    marginBottom: 8,
   },
 
   heroText: {
     color: colors.greenLight,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 21,
+    marginBottom: 16,
   },
 
   heroButton: {
-    marginTop: 18,
     backgroundColor: "#ffffff",
     borderRadius: 18,
     paddingVertical: 14,
@@ -178,92 +222,120 @@ const styles = StyleSheet.create({
 
   heroButtonText: {
     color: colors.green,
-    fontWeight: "900",
     fontSize: 15,
-  },
-
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 26,
-    padding: 18,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-
-  cardTitle: {
-    fontSize: 20,
     fontWeight: "900",
-    color: colors.text,
+  },
+
+  sectionTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
 
-  cardText: {
-    fontSize: 15,
-    color: colors.muted,
-    lineHeight: 22,
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: colors.text,
   },
 
-  workoutItem: {
-    borderTopWidth: 1,
-    borderTopColor: "#eee8da",
-    paddingTop: 14,
-    paddingBottom: 4,
-    marginTop: 8,
+  sectionAction: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: colors.accent,
+  },
+
+  emptyCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    padding: 20,
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 6,
+  },
+
+  emptyText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.muted,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+
+  workoutList: {
+    gap: 12,
+  },
+
+  workoutCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    padding: 16,
   },
 
   workoutTopRow: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 10,
+  },
+
+  workoutTitleWrap: {
+    flex: 1,
+  },
+
+  workoutDay: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: colors.accent,
+    marginBottom: 4,
   },
 
   workoutName: {
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: "900",
     color: colors.text,
-    flex: 1,
-    marginRight: 10,
+    marginBottom: 4,
   },
 
-  dayBadge: {
-    backgroundColor: colors.greenLight,
-    borderRadius: 999,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-  },
-
-  dayBadgeText: {
-    color: colors.green,
-    fontWeight: "900",
-    fontSize: 12,
+  workoutFocus: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: colors.muted,
+    lineHeight: 19,
   },
 
   workoutExercises: {
-    marginTop: 8,
-    color: "#3e3b34",
     fontSize: 14,
-    lineHeight: 20,
+    fontWeight: "700",
+    color: colors.text,
+    lineHeight: 22,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
   },
 
-  workoutExercisesMuted: {
-    marginTop: 8,
-    color: colors.muted,
-    fontSize: 14,
-    fontStyle: "italic",
-  },
-
-  smallStartButton: {
-    marginTop: 12,
+  startButton: {
     backgroundColor: colors.green,
     borderRadius: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: "center",
   },
 
-  smallStartButtonText: {
+  startButtonText: {
     color: "#ffffff",
-    fontWeight: "900",
     fontSize: 14,
+    fontWeight: "900",
   },
 });

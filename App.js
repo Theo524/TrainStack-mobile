@@ -235,6 +235,7 @@ function AppContent() {
         <TodayScreen
           plannedWorkouts={plannedWorkouts}
           onGoToPlan={() => changeTab("plan")}
+          onGoToMore={() => changeTab("more")}
           onStartTraining={startTraining}
         />
       );
@@ -296,6 +297,7 @@ function AppContent() {
       <TodayScreen
         plannedWorkouts={plannedWorkouts}
         onGoToPlan={() => changeTab("plan")}
+        onGoToMore={() => changeTab("more")}
         onStartTraining={startTraining}
       />
     );
