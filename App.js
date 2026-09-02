@@ -24,12 +24,14 @@ import { colors, spacing } from "./src/styles/theme";
 
 const PLANNED_WORKOUTS_KEY = "trainstack-planned-workouts";
 const COMPLETED_WORKOUTS_KEY = "trainstack-completed-workouts";
+const WORKOUT_TEMPLATES_KEY = "trainstack-workout-templates";
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState("today");
   const [plannedWorkouts, setPlannedWorkouts] = useState([]);
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [completedWorkouts, setCompletedWorkouts] = useState([]);
+  const [workoutTemplates, setWorkoutTemplates] = useState([]);
   const [storageLoaded, setStorageLoaded] = useState(false);
 
   const scrollViewRef = useRef(null);
@@ -46,12 +48,20 @@ function AppContent() {
           COMPLETED_WORKOUTS_KEY
         );
 
+        const savedWorkoutTemplates = await AsyncStorage.getItem(
+          WORKOUT_TEMPLATES_KEY
+        );
+
         if (savedPlannedWorkouts) {
           setPlannedWorkouts(JSON.parse(savedPlannedWorkouts));
         }
 
         if (savedCompletedWorkouts) {
           setCompletedWorkouts(JSON.parse(savedCompletedWorkouts));
+        }
+
+        if (savedWorkoutTemplates) {
+          setWorkoutTemplates(JSON.parse(savedWorkoutTemplates));
         }
       } catch (error) {
         console.log("Could not load saved workout data:", error);
@@ -97,6 +107,23 @@ function AppContent() {
     saveCompletedWorkouts();
   }, [completedWorkouts, storageLoaded]);
 
+  useEffect(() => {
+    if (!storageLoaded) return;
+
+    async function saveWorkoutTemplates() {
+      try {
+        await AsyncStorage.setItem(
+          WORKOUT_TEMPLATES_KEY,
+          JSON.stringify(workoutTemplates)
+        );
+      } catch (error) {
+        console.log("Could not save workout templates:", error);
+      }
+    }
+
+    saveWorkoutTemplates();
+  }, [workoutTemplates, storageLoaded]);
+
   function addPlannedWorkout(newWorkout) {
     setPlannedWorkouts((currentWorkouts) => [newWorkout, ...currentWorkouts]);
   }
@@ -128,6 +155,16 @@ function AppContent() {
       currentCompletedWorkouts.filter(
         (workout) => workout.id !== completedWorkoutId
       )
+    );
+  }
+
+  function addWorkoutTemplate(newTemplate) {
+    setWorkoutTemplates((currentTemplates) => [newTemplate, ...currentTemplates]);
+  }
+
+  function deleteWorkoutTemplate(templateId) {
+    setWorkoutTemplates((currentTemplates) =>
+      currentTemplates.filter((template) => template.id !== templateId)
     );
   }
 
@@ -186,9 +223,12 @@ function AppContent() {
       return (
         <PlanScreen
           plannedWorkouts={plannedWorkouts}
+          workoutTemplates={workoutTemplates}
           onAddWorkout={addPlannedWorkout}
           onUpdateWorkout={updatePlannedWorkout}
           onDeleteWorkout={deletePlannedWorkout}
+          onAddWorkoutTemplate={addWorkoutTemplate}
+          onDeleteWorkoutTemplate={deleteWorkoutTemplate}
           onScrollToTop={scrollToTop}
         />
       );

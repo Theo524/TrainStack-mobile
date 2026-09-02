@@ -19,9 +19,12 @@ const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function PlanScreen({
   plannedWorkouts,
+  workoutTemplates,
   onAddWorkout,
   onUpdateWorkout,
   onDeleteWorkout,
+  onAddWorkoutTemplate,
+  onDeleteWorkoutTemplate,
   onScrollToTop,
 }) {
   const [workoutName, setWorkoutName] = useState("");
@@ -34,6 +37,8 @@ export default function PlanScreen({
   const [showLibraryPicker, setShowLibraryPicker] = useState(false);
   const [libraryCategory, setLibraryCategory] = useState("All");
   const [librarySearchText, setLibrarySearchText] = useState("");
+
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const filteredLibraryExercises = useMemo(() => {
     const cleanSearch = librarySearchText.trim().toLowerCase();
@@ -91,6 +96,63 @@ export default function PlanScreen({
     }
 
     resetForm();
+  }
+
+  function saveCurrentAsTemplate() {
+    const cleanWorkoutName = workoutName.trim();
+    const cleanExercises = exercises.trim();
+
+    if (!cleanWorkoutName && !cleanExercises) {
+      Alert.alert(
+        "Empty template",
+        "Add a workout name or at least one exercise before saving a template."
+      );
+      return;
+    }
+
+    const newTemplate = {
+      id: Date.now().toString(),
+      name: cleanWorkoutName || `${focus} Template`,
+      exercises: cleanExercises,
+      focus,
+      createdAt: new Date().toISOString(),
+    };
+
+    onAddWorkoutTemplate(newTemplate);
+
+    Alert.alert(
+      "Template saved",
+      `"${newTemplate.name}" was saved as a reusable template.`
+    );
+  }
+
+  function loadTemplate(template) {
+    setWorkoutName(template.name);
+    setExercises(template.exercises);
+    setFocus(template.focus || "Custom");
+    setShowTemplates(false);
+
+    setTimeout(() => {
+      onScrollToTop?.();
+    }, 50);
+  }
+
+  function deleteTemplate(template) {
+    Alert.alert(
+      "Delete template?",
+      `Delete "${template.name}" from your templates?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => onDeleteWorkoutTemplate(template.id),
+        },
+      ]
+    );
   }
 
   function generateSuggestion() {
@@ -163,13 +225,14 @@ export default function PlanScreen({
         <Text style={styles.kicker}>Planner</Text>
         <Text style={styles.title}>Plan your training</Text>
         <Text style={styles.subtitle}>
-          Create workouts, generate ideas, or add exercises from your library.
+          Create workouts, load templates, generate ideas, or add exercises from
+          your library.
         </Text>
       </View>
 
       <View style={styles.formCard}>
         <View style={styles.formTopRow}>
-          <View>
+          <View style={styles.formTitleWrap}>
             <Text style={styles.cardTitle}>
               {editingWorkoutId ? "Edit workout" : "New workout"}
             </Text>
@@ -184,6 +247,71 @@ export default function PlanScreen({
             </Pressable>
           )}
         </View>
+
+        <View style={styles.templateActions}>
+          <Pressable
+            style={styles.templateToggleButton}
+            onPress={() => setShowTemplates((currentValue) => !currentValue)}
+          >
+            <Text style={styles.templateToggleButtonText}>
+              {showTemplates ? "Hide Templates" : "Load Template"}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.saveTemplateButton}
+            onPress={saveCurrentAsTemplate}
+          >
+            <Text style={styles.saveTemplateButtonText}>Save as Template</Text>
+          </Pressable>
+        </View>
+
+        {showTemplates && (
+          <View style={styles.templatePanel}>
+            <Text style={styles.templatePanelTitle}>Workout Templates</Text>
+            <Text style={styles.templatePanelSubtitle}>
+              Load a saved workout idea into the planner.
+            </Text>
+
+            {workoutTemplates.length === 0 ? (
+              <View style={styles.templateEmptyCard}>
+                <Text style={styles.templateEmptyTitle}>No templates yet</Text>
+                <Text style={styles.templateEmptyText}>
+                  Build a workout, then tap Save as Template.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.templateList}>
+                {workoutTemplates.map((template) => (
+                  <View key={template.id} style={styles.templateCard}>
+                    <View style={styles.templateInfo}>
+                      <Text style={styles.templateName}>{template.name}</Text>
+                      <Text style={styles.templateFocus}>
+                        {template.focus || "Custom"} template
+                      </Text>
+                    </View>
+
+                    <View style={styles.templateButtonRow}>
+                      <Pressable
+                        style={styles.loadTemplateButton}
+                        onPress={() => loadTemplate(template)}
+                      >
+                        <Text style={styles.loadTemplateButtonText}>Load</Text>
+                      </Pressable>
+
+                      <Pressable
+                        style={styles.deleteTemplateButton}
+                        onPress={() => deleteTemplate(template)}
+                      >
+                        <Text style={styles.deleteTemplateButtonText}>Delete</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         <Text style={styles.label}>Focus</Text>
         <View style={styles.chipWrap}>
@@ -445,6 +573,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+  formTitleWrap: {
+    flex: 1,
+  },
+
   cardTitle: {
     fontSize: 22,
     fontWeight: "900",
@@ -473,6 +605,152 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "900",
     color: colors.muted,
+  },
+
+  templateActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+
+  templateToggleButton: {
+    flex: 1,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+
+  templateToggleButtonText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  saveTemplateButton: {
+    flex: 1,
+    backgroundColor: colors.greenLight,
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+
+  saveTemplateButtonText: {
+    color: colors.green,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  templatePanel: {
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: 16,
+  },
+
+  templatePanelTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 4,
+  },
+
+  templatePanelSubtitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.muted,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+
+  templateEmptyCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 14,
+  },
+
+  templateEmptyTitle: {
+    fontSize: 15,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 4,
+  },
+
+  templateEmptyText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.muted,
+    lineHeight: 19,
+  },
+
+  templateList: {
+    gap: 10,
+  },
+
+  templateCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 12,
+  },
+
+  templateInfo: {
+    marginBottom: 10,
+  },
+
+  templateName: {
+    fontSize: 15,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 3,
+  },
+
+  templateFocus: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: colors.muted,
+  },
+
+  templateButtonRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  loadTemplateButton: {
+    flex: 1,
+    backgroundColor: colors.green,
+    borderRadius: 999,
+    paddingVertical: 9,
+    alignItems: "center",
+  },
+
+  loadTemplateButtonText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  deleteTemplateButton: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingVertical: 9,
+    alignItems: "center",
+  },
+
+  deleteTemplateButtonText: {
+    color: "#b42318",
+    fontSize: 12,
+    fontWeight: "900",
   },
 
   label: {
