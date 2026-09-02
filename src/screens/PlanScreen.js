@@ -1,12 +1,21 @@
-import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { colors } from "../styles/theme";
+import React, { useMemo, useState } from "react";
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+
 import {
   buildWorkoutSuggestion,
   workoutFocusOptions,
 } from "../data/workoutSuggestions";
+import { exerciseCategories, exerciseLibrary } from "../data/exerciseLibrary";
+import { colors } from "../styles/theme";
 
-const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function PlanScreen({
   plannedWorkouts,
@@ -18,99 +27,166 @@ export default function PlanScreen({
   const [workoutName, setWorkoutName] = useState("");
   const [selectedDay, setSelectedDay] = useState("Mon");
   const [exercises, setExercises] = useState("");
-
   const [focus, setFocus] = useState("Push");
   const [editingWorkoutId, setEditingWorkoutId] = useState(null);
   const [openMenuWorkoutId, setOpenMenuWorkoutId] = useState(null);
 
-  const isEditing = editingWorkoutId !== null;
+  const [showLibraryPicker, setShowLibraryPicker] = useState(false);
+  const [libraryCategory, setLibraryCategory] = useState("All");
+  const [librarySearchText, setLibrarySearchText] = useState("");
+
+  const filteredLibraryExercises = useMemo(() => {
+    const cleanSearch = librarySearchText.trim().toLowerCase();
+
+    return exerciseLibrary.filter((exercise) => {
+      const matchesCategory =
+        libraryCategory === "All" || exercise.category === libraryCategory;
+
+      const matchesSearch =
+        cleanSearch.length === 0 ||
+        exercise.name.toLowerCase().includes(cleanSearch) ||
+        exercise.category.toLowerCase().includes(cleanSearch) ||
+        exercise.target.toLowerCase().includes(cleanSearch) ||
+        exercise.description.toLowerCase().includes(cleanSearch);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [libraryCategory, librarySearchText]);
 
   function resetForm() {
     setWorkoutName("");
     setSelectedDay("Mon");
     setExercises("");
+    setFocus("Push");
     setEditingWorkoutId(null);
+    setOpenMenuWorkoutId(null);
   }
 
   function saveWorkout() {
-    if (!workoutName.trim()) return;
+    const cleanWorkoutName = workoutName.trim();
+    const cleanExercises = exercises.trim();
 
-    if (isEditing) {
-      const updatedWorkout = {
-        id: editingWorkoutId,
-        name: workoutName.trim(),
-        day: selectedDay,
-        exercises: exercises.trim(),
-      };
-
-      onUpdateWorkout(updatedWorkout);
-      resetForm();
+    if (!cleanWorkoutName && !cleanExercises) {
+      Alert.alert(
+        "Empty workout",
+        "Add a workout name or at least one exercise first."
+      );
       return;
     }
 
-    const newWorkout = {
-      id: Date.now().toString(),
-      name: workoutName.trim(),
+    const workoutToSave = {
+      id: editingWorkoutId || Date.now().toString(),
+      name: cleanWorkoutName || `${focus} Session`,
       day: selectedDay,
-      exercises: exercises.trim(),
+      exercises: cleanExercises,
+      focus,
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
 
-    onAddWorkout(newWorkout);
+    if (editingWorkoutId) {
+      onUpdateWorkout(workoutToSave);
+    } else {
+      onAddWorkout(workoutToSave);
+    }
+
     resetForm();
   }
 
   function generateSuggestion() {
-    const suggestion = buildWorkoutSuggestion({
-      focus,
-    });
+    const suggestion = buildWorkoutSuggestion({ focus });
 
     setWorkoutName(suggestion.name);
     setExercises(suggestion.exercises);
   }
 
   function startEditingWorkout(workout) {
-    setEditingWorkoutId(workout.id);
     setWorkoutName(workout.name);
     setSelectedDay(workout.day);
-    setExercises(workout.exercises || "");
+    setExercises(workout.exercises);
+    setFocus(workout.focus || "Custom");
+    setEditingWorkoutId(workout.id);
     setOpenMenuWorkoutId(null);
-    onScrollToTop();
+
+    setTimeout(() => {
+      onScrollToTop?.();
+    }, 50);
   }
 
-  function deleteWorkout(workoutId) {
-    onDeleteWorkout(workoutId);
+  function deleteWorkout(workout) {
     setOpenMenuWorkoutId(null);
 
-    if (editingWorkoutId === workoutId) {
-      resetForm();
-    }
+    Alert.alert(
+      "Delete workout?",
+      `Delete "${workout.name}" from your plan?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            onDeleteWorkout(workout.id);
+
+            if (editingWorkoutId === workout.id) {
+              resetForm();
+            }
+          },
+        },
+      ]
+    );
   }
 
   function toggleMenu(workoutId) {
-    if (openMenuWorkoutId === workoutId) {
-      setOpenMenuWorkoutId(null);
-    } else {
-      setOpenMenuWorkoutId(workoutId);
-    }
+    setOpenMenuWorkoutId((currentOpenMenuId) =>
+      currentOpenMenuId === workoutId ? null : workoutId
+    );
+  }
+
+  function addExerciseFromLibrary(exerciseName) {
+    setExercises((currentExercises) => {
+      const cleanCurrentExercises = currentExercises.trim();
+
+      if (cleanCurrentExercises.length === 0) {
+        return exerciseName;
+      }
+
+      return `${cleanCurrentExercises}\n${exerciseName}`;
+    });
   }
 
   return (
-    <View>
-      <Text style={styles.eyebrow}>PLAN</Text>
-      <Text style={styles.title}>Workout Planner</Text>
-      <Text style={styles.subtitle}>
-        Generate a starting point or type your own workout.
-      </Text>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Suggest workout</Text>
-        <Text style={styles.cardText}>
-          Pick one main focus. The app fills the form below, then you can edit
-          anything before saving.
+    <View style={styles.screen}>
+      <View style={styles.header}>
+        <Text style={styles.kicker}>Planner</Text>
+        <Text style={styles.title}>Plan your training</Text>
+        <Text style={styles.subtitle}>
+          Create workouts, generate ideas, or add exercises from your library.
         </Text>
+      </View>
 
-        <Text style={styles.label}>What do you want to train?</Text>
-        <View style={styles.chipRow}>
+      <View style={styles.formCard}>
+        <View style={styles.formTopRow}>
+          <View>
+            <Text style={styles.cardTitle}>
+              {editingWorkoutId ? "Edit workout" : "New workout"}
+            </Text>
+            <Text style={styles.cardSubtitle}>
+              Pick a focus, choose a day, then save it.
+            </Text>
+          </View>
+
+          {editingWorkoutId && (
+            <Pressable style={styles.cancelEditButton} onPress={resetForm}>
+              <Text style={styles.cancelEditButtonText}>Cancel</Text>
+            </Pressable>
+          )}
+        </View>
+
+        <Text style={styles.label}>Focus</Text>
+        <View style={styles.chipWrap}>
           {workoutFocusOptions.map((option) => {
             const isActive = focus === option;
 
@@ -128,45 +204,20 @@ export default function PlanScreen({
           })}
         </View>
 
-        <Pressable style={styles.secondaryButton} onPress={generateSuggestion}>
-          <Text style={styles.secondaryButtonText}>Generate suggestion</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>
-          {isEditing ? "Edit workout" : "Create workout"}
-        </Text>
-
-        {isEditing ? (
-          <View style={styles.editingNotice}>
-            <Text style={styles.editingNoticeText}>
-              Editing workout. Save changes or cancel below.
-            </Text>
-          </View>
-        ) : null}
-
-        <Text style={styles.label}>Workout name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Pull day, speed session, handstand practice..."
-          placeholderTextColor="#8b8578"
-          value={workoutName}
-          onChangeText={setWorkoutName}
-        />
-
         <Text style={styles.label}>Day</Text>
-        <View style={styles.dayRow}>
-          {days.map((day) => {
+        <View style={styles.dayWrap}>
+          {dayOptions.map((day) => {
             const isActive = selectedDay === day;
 
             return (
               <Pressable
                 key={day}
-                style={isActive ? styles.dayChipActive : styles.dayChip}
+                style={isActive ? styles.dayButtonActive : styles.dayButton}
                 onPress={() => setSelectedDay(day)}
               >
-                <Text style={isActive ? styles.dayTextActive : styles.dayText}>
+                <Text
+                  style={isActive ? styles.dayButtonTextActive : styles.dayButtonText}
+                >
                   {day}
                 </Text>
               </Pressable>
@@ -174,91 +225,172 @@ export default function PlanScreen({
           })}
         </View>
 
-        <Text style={styles.label}>Exercises</Text>
+        <Text style={styles.label}>Workout name</Text>
         <TextInput
-          style={[styles.input, styles.exerciseInput]}
-          placeholder={"Pull-ups 3x6\nRows 3x10\nLeg raises 4x12"}
-          placeholderTextColor="#8b8578"
-          value={exercises}
-          onChangeText={setExercises}
-          multiline
+          style={styles.input}
+          value={workoutName}
+          onChangeText={setWorkoutName}
+          placeholder="Example: Push Session"
+          placeholderTextColor={colors.muted}
         />
 
-        <Pressable style={styles.primaryButton} onPress={saveWorkout}>
-          <Text style={styles.primaryButtonText}>
-            {isEditing ? "Save changes" : "Save workout plan"}
-          </Text>
+        <View style={styles.exerciseLabelRow}>
+          <Text style={styles.label}>Exercises</Text>
+
+          <Pressable
+            style={styles.libraryToggleButton}
+            onPress={() => setShowLibraryPicker((currentValue) => !currentValue)}
+          >
+            <Text style={styles.libraryToggleButtonText}>
+              {showLibraryPicker ? "Hide Library" : "Add from Library"}
+            </Text>
+          </Pressable>
+        </View>
+
+        <TextInput
+          style={styles.exerciseInput}
+          value={exercises}
+          onChangeText={setExercises}
+          placeholder={"Example:\nPush-ups 4x12\nDips 3x8\nPlank 3x45s"}
+          placeholderTextColor={colors.muted}
+          multiline
+          textAlignVertical="top"
+        />
+
+        {showLibraryPicker && (
+          <View style={styles.libraryPicker}>
+            <Text style={styles.libraryPickerTitle}>Exercise Library</Text>
+            <Text style={styles.libraryPickerSubtitle}>
+              Tap Add to place an exercise into your workout.
+            </Text>
+
+            <TextInput
+              style={styles.librarySearchInput}
+              value={librarySearchText}
+              onChangeText={setLibrarySearchText}
+              placeholder="Search library..."
+              placeholderTextColor={colors.muted}
+            />
+
+            <View style={styles.libraryCategoryWrap}>
+              {exerciseCategories.map((category) => {
+                const isActive = libraryCategory === category;
+
+                return (
+                  <Pressable
+                    key={category}
+                    style={
+                      isActive
+                        ? styles.libraryCategoryChipActive
+                        : styles.libraryCategoryChip
+                    }
+                    onPress={() => setLibraryCategory(category)}
+                  >
+                    <Text
+                      style={
+                        isActive
+                          ? styles.libraryCategoryChipTextActive
+                          : styles.libraryCategoryChipText
+                      }
+                    >
+                      {category}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.libraryCountText}>
+              Showing {filteredLibraryExercises.length} exercise
+              {filteredLibraryExercises.length === 1 ? "" : "s"}
+            </Text>
+
+            {filteredLibraryExercises.map((exercise) => (
+              <View key={exercise.id} style={styles.libraryExerciseCard}>
+                <View style={styles.libraryExerciseInfo}>
+                  <Text style={styles.libraryExerciseName}>{exercise.name}</Text>
+                  <Text style={styles.libraryExerciseTarget}>
+                    {exercise.category} • {exercise.target}
+                  </Text>
+                </View>
+
+                <Pressable
+                  style={styles.addExerciseButton}
+                  onPress={() => addExerciseFromLibrary(exercise.name)}
+                >
+                  <Text style={styles.addExerciseButtonText}>Add</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <Pressable style={styles.generateButton} onPress={generateSuggestion}>
+          <Text style={styles.generateButtonText}>Generate suggestion</Text>
         </Pressable>
 
-        {isEditing ? (
-          <Pressable style={styles.cancelButton} onPress={resetForm}>
-            <Text style={styles.cancelButtonText}>Cancel editing</Text>
-          </Pressable>
-        ) : null}
+        <Pressable style={styles.saveButton} onPress={saveWorkout}>
+          <Text style={styles.saveButtonText}>
+            {editingWorkoutId ? "Save changes" : "Save workout"}
+          </Text>
+        </Pressable>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Planned workouts</Text>
+      <View style={styles.plannedSection}>
+        <Text style={styles.sectionTitle}>Planned workouts</Text>
 
         {plannedWorkouts.length === 0 ? (
-          <Text style={styles.emptyText}>
-            No workouts planned yet. Create your first one above.
-          </Text>
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No workouts planned yet</Text>
+            <Text style={styles.emptyText}>
+              Create your first workout above and it will appear here.
+            </Text>
+          </View>
         ) : (
-          plannedWorkouts.map((workout) => {
-            const isMenuOpen = openMenuWorkoutId === workout.id;
+          <View style={styles.workoutList}>
+            {plannedWorkouts.map((workout) => (
+              <View key={workout.id} style={styles.workoutCard}>
+                <View style={styles.workoutCardTopRow}>
+                  <View style={styles.workoutCardTitleWrap}>
+                    <Text style={styles.workoutDay}>{workout.day}</Text>
+                    <Text style={styles.workoutName}>{workout.name}</Text>
+                    <Text style={styles.workoutFocus}>
+                      {workout.focus || "Custom"} workout
+                    </Text>
+                  </View>
 
-            return (
-              <View key={workout.id} style={styles.workoutItem}>
-                <View style={styles.workoutTopRow}>
-                  <Text style={styles.workoutName}>{workout.name}</Text>
-
-                  <View style={styles.workoutActions}>
-                    <View style={styles.dayBadge}>
-                      <Text style={styles.dayBadgeText}>{workout.day}</Text>
-                    </View>
-
+                  <View style={styles.menuWrap}>
                     <Pressable
-                      style={styles.optionsButton}
+                      style={styles.menuButton}
                       onPress={() => toggleMenu(workout.id)}
                     >
-                      <Text style={styles.optionsButtonText}>⋯</Text>
+                      <Text style={styles.menuButtonText}>•••</Text>
                     </Pressable>
+
+                    {openMenuWorkoutId === workout.id && (
+                      <View style={styles.menu}>
+                        <Pressable
+                          style={styles.menuItem}
+                          onPress={() => startEditingWorkout(workout)}
+                        >
+                          <Text style={styles.menuItemText}>Edit</Text>
+                        </Pressable>
+
+                        <Pressable
+                          style={styles.menuItem}
+                          onPress={() => deleteWorkout(workout)}
+                        >
+                          <Text style={styles.menuItemTextDelete}>Delete</Text>
+                        </Pressable>
+                      </View>
+                    )}
                   </View>
                 </View>
 
-                {workout.exercises ? (
-                  <Text style={styles.workoutExercises}>
-                    {workout.exercises}
-                  </Text>
-                ) : (
-                  <Text style={styles.workoutExercisesMuted}>
-                    No exercises added yet.
-                  </Text>
-                )}
-
-                {isMenuOpen ? (
-                  <View style={styles.actionMenu}>
-                    <Pressable
-                      style={styles.actionMenuButton}
-                      onPress={() => startEditingWorkout(workout)}
-                    >
-                      <Text style={styles.actionMenuButtonText}>Edit workout</Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={styles.actionMenuDeleteButton}
-                      onPress={() => deleteWorkout(workout.id)}
-                    >
-                      <Text style={styles.actionMenuDeleteText}>
-                        Delete workout
-                      </Text>
-                    </Pressable>
-                  </View>
-                ) : null}
+                <Text style={styles.workoutExercises}>{workout.exercises}</Text>
               </View>
-            );
-          })
+            ))}
+          </View>
         )}
       </View>
     </View>
@@ -266,255 +398,465 @@ export default function PlanScreen({
 }
 
 const styles = StyleSheet.create({
-  eyebrow: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 2,
-    color: "#4d6b58",
+  screen: {
+    paddingTop: 12,
+  },
+
+  header: {
+    marginBottom: 18,
+  },
+
+  kicker: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: colors.accent,
     marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
 
   title: {
     fontSize: 34,
     fontWeight: "900",
     color: colors.text,
-  },
-
-  subtitle: {
-    marginTop: 5,
-    fontSize: 15,
-    color: colors.muted,
-    marginBottom: 18,
-  },
-
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 26,
-    padding: 18,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: colors.text,
-    marginBottom: 10,
-  },
-
-  cardText: {
-    fontSize: 15,
-    color: colors.muted,
-    lineHeight: 22,
-    marginBottom: 4,
-  },
-
-  editingNotice: {
-    backgroundColor: colors.greenLight,
-    borderRadius: 16,
-    padding: 12,
     marginBottom: 8,
   },
 
-  editingNoticeText: {
-    color: colors.green,
-    fontWeight: "900",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-
-  label: {
-    fontSize: 12,
-    fontWeight: "900",
+  subtitle: {
+    fontSize: 15,
+    fontWeight: "700",
     color: colors.muted,
-    marginBottom: 7,
-    marginTop: 12,
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    lineHeight: 22,
   },
 
-  input: {
+  formCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 24,
+  },
+
+  formTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 16,
+  },
+
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 4,
+  },
+
+  cardSubtitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.muted,
+    lineHeight: 19,
+  },
+
+  cancelEditButton: {
     backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
-    paddingHorizontal: 15,
-    paddingVertical: 13,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignSelf: "flex-start",
+  },
+
+  cancelEditButtonText: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: colors.muted,
+  },
+
+  label: {
+    fontSize: 13,
+    fontWeight: "900",
     color: colors.text,
-    fontSize: 16,
+    marginBottom: 8,
   },
 
-  exerciseInput: {
-    minHeight: 110,
-    textAlignVertical: "top",
-  },
-
-  chipRow: {
+  chipWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+    marginBottom: 16,
   },
 
   chip: {
     backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 13,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 999,
   },
 
   chipActive: {
     backgroundColor: colors.green,
     borderWidth: 1,
     borderColor: colors.green,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 13,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 999,
   },
 
   chipText: {
     color: colors.muted,
+    fontSize: 12,
     fontWeight: "900",
-    fontSize: 13,
   },
 
   chipTextActive: {
     color: "#ffffff",
+    fontSize: 12,
     fontWeight: "900",
-    fontSize: 13,
   },
 
-  dayRow: {
+  dayWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+    marginBottom: 16,
   },
 
-  dayChip: {
+  dayButton: {
+    flexGrow: 1,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 10,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+
+  dayButtonActive: {
+    flexGrow: 1,
+    backgroundColor: colors.green,
+    borderWidth: 1,
+    borderColor: colors.green,
+    paddingVertical: 10,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+
+  dayButtonText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  dayButtonTextActive: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  input: {
     backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 13,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.text,
+    marginBottom: 16,
   },
 
-  dayChipActive: {
+  exerciseLabelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+
+  libraryToggleButton: {
+    backgroundColor: colors.greenLight,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+
+  libraryToggleButtonText: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  exerciseInput: {
+    minHeight: 150,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.text,
+    lineHeight: 22,
+    marginBottom: 14,
+  },
+
+  libraryPicker: {
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: 14,
+  },
+
+  libraryPickerTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 4,
+  },
+
+  libraryPickerSubtitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.muted,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+
+  librarySearchInput: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.text,
+    marginBottom: 12,
+  },
+
+  libraryCategoryWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  libraryCategoryChip: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+
+  libraryCategoryChipActive: {
     backgroundColor: colors.green,
     borderWidth: 1,
     borderColor: colors.green,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+
+  libraryCategoryChipText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  libraryCategoryChipTextActive: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  libraryCountText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: colors.muted,
+    marginBottom: 10,
+  },
+
+  libraryExerciseCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 13,
-  },
-
-  dayText: {
-    color: colors.muted,
-    fontWeight: "900",
-    fontSize: 13,
-  },
-
-  dayTextActive: {
-    color: "#ffffff",
-    fontWeight: "900",
-    fontSize: 13,
-  },
-
-  primaryButton: {
-    marginTop: 16,
-    backgroundColor: colors.accent,
-    borderRadius: 18,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-
-  primaryButtonText: {
-    color: "#ffffff",
-    fontWeight: "900",
-    fontSize: 16,
-  },
-
-  secondaryButton: {
-    marginTop: 16,
-    backgroundColor: colors.green,
-    borderRadius: 18,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-
-  secondaryButtonText: {
-    color: "#ffffff",
-    fontWeight: "900",
-    fontSize: 16,
-  },
-
-  cancelButton: {
-    marginTop: 10,
-    backgroundColor: colors.input,
-    borderRadius: 18,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-
-  cancelButtonText: {
-    color: colors.green,
-    fontWeight: "900",
-    fontSize: 15,
-  },
-
-  emptyText: {
-    color: colors.muted,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-
-  workoutItem: {
-    borderTopWidth: 1,
-    borderTopColor: "#eee8da",
-    paddingTop: 14,
-    paddingBottom: 4,
-    marginTop: 8,
-  },
-
-  workoutTopRow: {
+    padding: 12,
+    marginBottom: 8,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     gap: 10,
   },
 
-  workoutName: {
-    fontSize: 17,
-    fontWeight: "900",
-    color: colors.text,
+  libraryExerciseInfo: {
     flex: 1,
   },
 
-  workoutActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-
-  dayBadge: {
-    backgroundColor: colors.greenLight,
-    borderRadius: 999,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-  },
-
-  dayBadgeText: {
-    color: colors.green,
+  libraryExerciseName: {
+    fontSize: 14,
     fontWeight: "900",
-    fontSize: 12,
+    color: colors.text,
+    marginBottom: 3,
   },
 
-  optionsButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  libraryExerciseTarget: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.muted,
+    lineHeight: 17,
+  },
+
+  addExerciseButton: {
+    backgroundColor: colors.green,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+
+  addExerciseButtonText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  generateButton: {
+    backgroundColor: colors.greenLight,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  generateButtonText: {
+    color: colors.green,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  saveButton: {
+    backgroundColor: colors.green,
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+
+  saveButtonText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+
+  plannedSection: {
+    marginBottom: 24,
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 12,
+  },
+
+  emptyCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    padding: 20,
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 6,
+  },
+
+  emptyText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.muted,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+
+  workoutList: {
+    gap: 12,
+  },
+
+  workoutCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    padding: 16,
+  },
+
+  workoutCardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 10,
+  },
+
+  workoutCardTitleWrap: {
+    flex: 1,
+  },
+
+  workoutDay: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: colors.accent,
+    marginBottom: 4,
+  },
+
+  workoutName: {
+    fontSize: 19,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 4,
+  },
+
+  workoutFocus: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: colors.muted,
+  },
+
+  workoutExercises: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.text,
+    lineHeight: 22,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 12,
+  },
+
+  menuWrap: {
+    position: "relative",
+    alignItems: "flex-end",
+  },
+
+  menuButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
@@ -522,62 +864,40 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  optionsButtonText: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "900",
-    marginTop: -8,
-  },
-
-  workoutExercises: {
-    marginTop: 8,
-    color: "#3e3b34",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-
-  workoutExercisesMuted: {
-    marginTop: 8,
+  menuButtonText: {
     color: colors.muted,
-    fontSize: 14,
-    fontStyle: "italic",
+    fontSize: 15,
+    fontWeight: "900",
+    marginTop: -5,
   },
 
-  actionMenu: {
-    marginTop: 12,
-    backgroundColor: colors.input,
-    borderRadius: 18,
-    padding: 10,
+  menu: {
+    position: "absolute",
+    top: 42,
+    right: 0,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 8,
+    borderRadius: 16,
+    paddingVertical: 6,
+    width: 120,
+    zIndex: 10,
   },
 
-  actionMenuButton: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: "center",
+  menuItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
 
-  actionMenuButtonText: {
-    color: colors.green,
-    fontWeight: "900",
+  menuItemText: {
     fontSize: 14,
-  },
-
-  actionMenuDeleteButton: {
-    backgroundColor: "#fff1ef",
-    borderWidth: 1,
-    borderColor: "#f0c5bf",
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-
-  actionMenuDeleteText: {
-    color: "#9f2f24",
     fontWeight: "900",
+    color: colors.text,
+  },
+
+  menuItemTextDelete: {
     fontSize: 14,
+    fontWeight: "900",
+    color: "#b42318",
   },
 });
