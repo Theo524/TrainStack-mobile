@@ -20,6 +20,7 @@ import PlanScreen from "./src/screens/PlanScreen";
 import WorkoutScreen from "./src/screens/WorkoutScreen";
 import LibraryScreen from "./src/screens/LibraryScreen";
 import StatsScreen from "./src/screens/StatsScreen";
+import MoreScreen from "./src/screens/MoreScreen";
 import { colors, spacing } from "./src/styles/theme";
 
 const PLANNED_WORKOUTS_KEY = "trainstack-planned-workouts";
@@ -168,6 +169,26 @@ function AppContent() {
     );
   }
 
+  function resetPlannedWorkouts() {
+    setPlannedWorkouts([]);
+    setActiveWorkout(null);
+  }
+
+  function resetCompletedWorkouts() {
+    setCompletedWorkouts([]);
+  }
+
+  function resetWorkoutTemplates() {
+    setWorkoutTemplates([]);
+  }
+
+  function resetAllData() {
+    setPlannedWorkouts([]);
+    setCompletedWorkouts([]);
+    setWorkoutTemplates([]);
+    setActiveWorkout(null);
+  }
+
   function scrollToY(y) {
     scrollViewRef.current?.scrollTo({
       y,
@@ -253,6 +274,20 @@ function AppContent() {
         <StatsScreen
           completedWorkouts={completedWorkouts}
           onDeleteCompletedWorkout={deleteCompletedWorkout}
+        />
+      );
+    }
+
+    if (activeTab === "more") {
+      return (
+        <MoreScreen
+          plannedWorkoutsCount={plannedWorkouts.length}
+          completedWorkoutsCount={completedWorkouts.length}
+          workoutTemplatesCount={workoutTemplates.length}
+          onResetPlannedWorkouts={resetPlannedWorkouts}
+          onResetCompletedWorkouts={resetCompletedWorkouts}
+          onResetWorkoutTemplates={resetWorkoutTemplates}
+          onResetAllData={resetAllData}
         />
       );
     }

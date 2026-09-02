@@ -9,6 +9,7 @@ const tabs = [
   { id: "train", label: "Train" },
   { id: "library", label: "Library" },
   { id: "stats", label: "Stats" },
+  { id: "more", label: "More" },
 ];
 
 export default function BottomNav({ activeTab, onChangeTab }) {
@@ -45,11 +46,11 @@ export default function BottomNav({ activeTab, onChangeTab }) {
 const styles = StyleSheet.create({
   bottomNav: {
     position: "absolute",
-    left: 12,
-    right: 12,
+    left: 10,
+    right: 10,
     backgroundColor: colors.card,
     borderRadius: 24,
-    padding: 8,
+    padding: 7,
     flexDirection: "row",
     borderWidth: 1,
     borderColor: colors.border,
@@ -57,28 +58,28 @@ const styles = StyleSheet.create({
 
   navItem: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 11,
     alignItems: "center",
-    borderRadius: 18,
+    borderRadius: 17,
   },
 
   navItemActive: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 11,
     alignItems: "center",
-    borderRadius: 18,
+    borderRadius: 17,
     backgroundColor: colors.green,
   },
 
   navText: {
     color: colors.muted,
     fontWeight: "800",
-    fontSize: 10,
+    fontSize: 9,
   },
 
   navTextActive: {
     color: "#ffffff",
     fontWeight: "900",
-    fontSize: 10,
+    fontSize: 9,
   },
 });
